@@ -6,6 +6,5 @@
 #define UINT256_CUH
 
 typedef unsigned long uint256[8];
-__device__ int lt(uint256 a, uint256 b);
 
 #endif // UINT256_CUH

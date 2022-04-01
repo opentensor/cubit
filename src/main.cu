@@ -4,11 +4,25 @@
 #include <unistd.h>
 #include <cuda.h>
 #include "sha256.cuh"
-#include "main.h"
 #include "uint256.cuh"
+#include "main.h"
 #include <dirent.h>
 #include <ctype.h>
 
+// Copyright (c) 2009-2010 Satoshi Nakamoto
+// Copyright (c) 2009-2019 The Bitcoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+__device__ int lt(uint256 a, uint256 b) {
+    for (int i = 8 - 1; i >= 0; i--) {
+        if (a[i] < b[i]) {
+            return -1;
+        } else if (a[i] > b[i]) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
 __device__ void sha256(unsigned char* data, int size, unsigned char* digest) {
     SHA256_CTX ctx;
@@ -17,16 +31,16 @@ __device__ void sha256(unsigned char* data, int size, unsigned char* digest) {
     sha256_final(&ctx, digest);
 }
 
-__device__ bool seal_meets_difficulty(unsigned char* seal, uint256 limit) {
+__device__ bool seal_meets_difficulty(BYTE* seal, uint256 limit) {
     // Need a 256 bit integer to store the seal number
     uint256 seal_number;
-    memcpy(&seal_number, seal, 32);
+    memcpy(&seal_number, seal, 64); // 64 bytes
     // Check if the seal number is less than the limit
     return lt(seal_number, limit) == -1;
 }
 
-__device__ void create_seal_hash(unsigned char* seal, unsigned char* block_hash, unsigned long nonce) {
-    unsigned char pre_seal[72];
+__device__ void create_seal_hash(BYTE* seal, BYTE* block_hash, unsigned long nonce) {
+    BYTE pre_seal[72];
     
     // Convert nonce to bytes little endian and store at start of pre_seal;
     for (int i = 0; i < 8; i++) {
@@ -42,20 +56,20 @@ __device__ void create_seal_hash(unsigned char* seal, unsigned char* block_hash,
     sha256(pre_seal, 72, seal);     
 }
 
-__global__ void solve_cuda(unsigned char* seal, unsigned long* solution, unsigned long* nonce_start, unsigned long update_interval, unsigned int n_nonces, uint256 limit, unsigned char* block_bytes) {
+__global__ void solve_cuda(BYTE* seal, unsigned long* solution, unsigned long* nonce_start, unsigned long update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes) {
         BYTE seal_[64];
         
-        for (int i = blockIdx.x * blockDim.x + threadIdx.x; 
+        for (unsigned int i = blockIdx.x * blockDim.x + threadIdx.x; 
                 i < n_nonces; 
                 i += blockDim.x * gridDim.x) 
             {
-                int nonce = nonce_start[i];
-                for (int j = nonce; j < nonce + update_interval; j++) {
+                unsigned long nonce = nonce_start[i];
+                for (unsigned long j = nonce; j < nonce + update_interval; j++) {
                     create_seal_hash(seal_, block_bytes, j);
                     if (seal_meets_difficulty(seal_, limit)) {
                         solution[i] = j;
                         // Copy seal to shared memory
-                        for (int k = 0; k < 32; k++) {
+                        for (int k = 0; k < 64; k++) {
                             block_bytes[k] = seal_[k];
                         }
                         break;

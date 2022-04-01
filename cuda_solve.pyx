@@ -34,7 +34,7 @@ cpdef tuple solve_cuda(int blockSize, list nonce_start, unsigned int update_inte
     limit_[6] = limit[6]
     limit_[7] = limit[7]
 
-    cdef int i
+    cdef unsigned int i
     for i in range(n_nonces):
         nonce_start_c[i] = nonce_start[i]
 
