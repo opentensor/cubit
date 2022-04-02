@@ -27,7 +27,7 @@ __device__ int lt(uint256 a, uint256 b) {
     return 0;
 }
 
-__device__ void sha256(unsigned char* data, int size, unsigned char* digest) {
+__device__ void sha256(unsigned char* data, unsigned long size, unsigned char* digest) {
     SHA256_CTX ctx;
     sha256_init(&ctx);
     sha256_update(&ctx, data, size);
@@ -62,7 +62,7 @@ __device__ void create_seal_hash(BYTE* seal, BYTE* block_hash, unsigned long non
     }
     
     // Hash the pre_seal and store in seal;
-    sha256(pre_seal, 40, seal);     
+    sha256(pre_seal, sizeof(BYTE) * 40, seal);     
 }
 
 __global__ void solve(BYTE* seal, unsigned long* solution, unsigned long* nonce_start, unsigned long update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes) {
@@ -87,6 +87,10 @@ __global__ void solve(BYTE* seal, unsigned long* solution, unsigned long* nonce_
             }            
 }
 
+__global__ void test_sha256(BYTE* data, int size, BYTE* digest) {
+    sha256(data, size, digest);
+}
+
 void pre_sha256() {
 	// copy symbols
 	checkCudaErrors(cudaMemcpyToSymbol(dev_k, host_k, sizeof(host_k), 0, cudaMemcpyHostToDevice));
@@ -97,12 +101,24 @@ void runSolve(int blockSize, BYTE* seal, unsigned long* solution, unsigned long*
 	solve <<< numBlocks, blockSize >>> (seal, solution, nonce_start, update_interval, n_nonces, limit, block_bytes);
 }
 
+void runTest(BYTE* data, unsigned long size, BYTE* digest) {
+    // Test sha256
+    BYTE* dev_data;
+    BYTE* dev_digest;
+    checkCudaErrors(cudaMallocManaged(&dev_data, size));
+    checkCudaErrors(cudaMallocManaged(&dev_digest, sizeof(BYTE) * 64));
+
+    pre_sha256();
+    test_sha256<<<1, 1>>>(dev_data, size, dev_digest);
+    checkCudaErrors(cudaMemcpy(digest, dev_digest, 64, cudaMemcpyDeviceToHost));
+}
+
 unsigned long solve_cuda_c(int blockSize, BYTE* seal, unsigned long* nonce_start, unsigned long update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes) {
 	unsigned long* nonce_start_d;
 	unsigned char* block_bytes_d;
     BYTE* seal_d;
     unsigned long* solution_d;
-    unsigned long* solution;
+    unsigned long solution[1] = {0};
     unsigned long* limit_d;
 
     // Allocate memory on device
@@ -134,6 +150,9 @@ unsigned long solve_cuda_c(int blockSize, BYTE* seal, unsigned long* nonce_start
 		seal_d[i] = 0xff;
         seal[i] = 0xff;
 	}
+
+    // Zero solution
+    checkCudaErrors(cudaMemset(solution_d, 0, sizeof(unsigned long)));
 
 	pre_sha256();
 
