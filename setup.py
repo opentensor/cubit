@@ -89,7 +89,7 @@ def customize_compiler_for_nvcc(self):
     # object but distutils doesn't have the ability to change compilers
     # based on source extension: we add it.
     def _compile(obj, src, ext, cc_args, extra_postargs, pp_opts):
-        if os.path.splitext(src)[1] == '.cu' or os.path.splitext(src)[1] == '.pyx':
+        if os.path.splitext(src)[1] == '.cu':
             # use the cuda for .cu files
             self.set_executable('compiler_so', CUDA['nvcc'])
             # use only a subset of the extra_postargs, which are 1-1
@@ -130,11 +130,13 @@ ext = Extension('bittensor_register_cuda',
             libraries=['cudart'],
             language='c++',
             runtime_library_dirs=[CUDA['lib64']],
-            # this syntax is specific to this build system
-            # we're only going to use certain compiler args with nvcc and not with gcc
-            # the implementation of this trick is in customize_compiler() below
-            extra_compile_args={'gcc': ['-std=c++11', '-O3'],
-                                'nvcc': ['-std=c++11','-gencode','arch=compute_30,code=sm_30']},
+            extra_compile_args={
+                'gcc': [],
+                'nvcc': [
+                '-arch=sm_30', '--ptxas-options=-v', '-c',
+                '--compiler-options', "'-fPIC'"
+                ]
+            },
             include_dirs = [numpy_include, CUDA['include'], 'src'])
 
 

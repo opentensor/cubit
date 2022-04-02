@@ -123,9 +123,6 @@ __device__ void mycpy64(uint32_t *d, const uint32_t *s) {
 __device__ void sha256_transform(SHA256_CTX *ctx, const BYTE data[])
 {
 	WORD a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];
-    WORD S[8];
-
-    //mycpy32(S, ctx->state);
 
     #pragma unroll 16
 	for (i = 0, j = 0; i < 16; ++i, j += 4)
