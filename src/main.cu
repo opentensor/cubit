@@ -108,34 +108,46 @@ unsigned long solve_cuda_c(int blockSize, BYTE* seal, unsigned long* nonce_start
     // Allocate memory on device
     
     // Malloc space for solution in device memory. Should be a single unsigned long.
+    printf("Allocating memory on device\n");
     checkCudaErrors(cudaMallocManaged(&solution_d, sizeof(unsigned long)));
     // Malloc space for seal in device memory. Should be one seal.
     checkCudaErrors(cudaMallocManaged(&seal_d, 64 * sizeof(BYTE)));
     // Malloc space for nonce_start in device memory.
     checkCudaErrors(cudaMallocManaged(&nonce_start_d, n_nonces * sizeof(unsigned long)));
-    // Malloc space for block_bytes in device memory. Should be 64 bytes.
+    // Malloc space for block_bytes in device memory. Should be 32 bytes.
     checkCudaErrors(cudaMallocManaged(&block_bytes_d, 32 * sizeof(BYTE)));
     // Malloc space for limit in device memory.
     checkCudaErrors(cudaMallocManaged(&limit_d, 8 * sizeof(unsigned long)));
 
 	// Copy data to device memory
-
-	// Put block bytes in device memory. Should be 64 bytes.
+    printf("Copying memory to device\n");
+	// Put block bytes in device memory. Should be 32 bytes.
 	checkCudaErrors(cudaMemcpy(block_bytes_d, block_bytes, 32 * sizeof(BYTE), cudaMemcpyHostToDevice));
 	// Put nonce_start in device memory. Should be a single int for each thread.
 	checkCudaErrors(cudaMemcpy(nonce_start_d, nonce_start, n_nonces * sizeof(unsigned long), cudaMemcpyHostToDevice));
     // Put limit in device memory.
     checkCudaErrors(cudaMemcpy(limit_d, limit, 8 * sizeof(unsigned long), cudaMemcpyHostToDevice));
 
+    // Set seal to 
+    for (int i = 0; i < 64; i++)
+	{
+		seal_d[i] = 0xff;
+        seal[i] = 0xff;
+	}
 
 	pre_sha256();
 
+    // Running Solve on GPU
+    printf("Running solve on GPU\n");
 	runSolve(blockSize, seal_d, solution_d, nonce_start_d, update_interval, n_nonces, limit_d, block_bytes_d);
 
 	cudaDeviceSynchronize();
+    
     // Copy data back to host memory
-    checkCudaErrors(cudaMemcpy(solution_d, solution, sizeof(int), cudaMemcpyDeviceToHost));
-    checkCudaErrors(cudaMemcpy(seal_d, seal, 32 * sizeof(BYTE), cudaMemcpyDeviceToHost));
+    printf("Copying memory to host\n");
+    checkCudaErrors(cudaMemcpy(solution, solution_d, 1 * sizeof(unsigned long), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(seal, seal_d, 64 * sizeof(BYTE), cudaMemcpyDeviceToHost));
+    
 	cudaDeviceReset();
 	return solution[0];
 }
