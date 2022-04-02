@@ -9,14 +9,16 @@ cdef extern from "src/uint256.cuh":
     ctypedef unsigned long uint256[8]
 
 cdef extern from "src/main.hh":
+    void runTestSealHash(unsigned char* seal, unsigned char* block_hash, unsigned long nonce);
+    void runTestPreSealHash(unsigned char* seal, unsigned char* preseal_bytes);
     void runTest(unsigned char* data, unsigned long size, unsigned char* digest);
     unsigned long solve_cuda_c(int blockSize, unsigned char* seal, unsigned long* nonce_start, unsigned long update_interval, unsigned int n_nonces, uint256 limit, unsigned char* block_bytes);
 
-cpdef bytes run_test(unsigned char* data): 
+cpdef bytes run_test(unsigned char* data, unsigned long length): 
     cdef unsigned char* digest_ = <unsigned char*> PyMem_Malloc(
         64 * sizeof(unsigned char))
 
-    cdef unsigned long size = sizeof(data)
+    cdef unsigned long size = sizeof(unsigned char) * length
     cdef bytes digest_str
 
     try:
@@ -28,8 +30,38 @@ cpdef bytes run_test(unsigned char* data):
     finally:
         PyMem_Free(digest_)
 
+cpdef bytes run_test_seal_hash(unsigned char* block_bytes, unsigned long nonce):
+    cdef unsigned char* digest_ = <unsigned char*> PyMem_Malloc(
+        64 * sizeof(unsigned char))
+
+    cdef bytes digest_str
+
+    try:
+        runTestSealHash(digest_, block_bytes, nonce)
+        # Convert digest to python string
+        digest_str = digest_
+
+        return digest_str
+    finally:
+        PyMem_Free(digest_)
+
+cpdef bytes run_test_preseal_hash(unsigned char* preseal_bytes):
+    cdef unsigned char* digest_ = <unsigned char*> PyMem_Malloc(
+        64 * sizeof(unsigned char))
+
+    cdef bytes digest_str
+
+    try:
+        runTestPreSealHash(digest_, preseal_bytes)
+        # Convert digest to python string
+        digest_str = digest_
+
+        return digest_str
+    finally:
+        PyMem_Free(digest_)
+
 cpdef tuple solve_cuda(int blockSize, list nonce_start, unsigned int update_interval, unsigned int n_nonces, unsigned long long difficulty, const unsigned char[:] limit, const unsigned char[:] block_bytes):
-    cdef unsigned char seal[64]
+    cdef bytes seal
     cdef unsigned long solution
 
     cdef unsigned long* nonce_start_c = <unsigned long*> PyMem_Malloc(
@@ -63,8 +95,7 @@ cpdef tuple solve_cuda(int blockSize, list nonce_start, unsigned int update_inte
 
     try:
         solution = solve_cuda_c(blockSize, seal_, nonce_start_c, update_interval, n_nonces, limit_, block_bytes_c);
-        for i in range(64):
-            seal[i] = seal_[i]
+        seal = seal_
         return (solution, seal)
     finally:
         PyMem_Free(nonce_start_c)

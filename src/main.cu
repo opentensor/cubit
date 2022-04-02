@@ -17,6 +17,7 @@ __device__ int lt(uint256 a, uint256 b) {
     // Assumes a and b are little-endian
     // This is correct for CUDA
     // https://stackoverflow.com/questions/15356622/anyone-know-whether-nvidias-gpus-are-big-or-little-endian
+    
     for (int i = 8 - 1; i >= 0; i--) {
         if (a[i] < b[i]) {
             return -1;
@@ -36,14 +37,13 @@ __device__ void sha256(unsigned char* data, unsigned long size, unsigned char* d
 
 __device__ bool seal_meets_difficulty(BYTE* seal, uint256 limit) {
     // Need a 256 bit integer to store the seal number
-    uint256 seal_num_big;    
-    memcpy(&seal_num_big, seal, 64); // 64 bytes
     uint256 seal_number;
-
-    // Seal is big-endian, so we need to reverse it
+    
+    // Seal is big-endian, and we want little-endian
     for (int i = 0; i < 8; i++) {
-        seal_number[i] = seal_num_big[7 - i];
+        seal_number[i] = seal[60 - (i * 4)] | (seal[61 - (i * 4)] << 8) | (seal[62 - (i * 4)] << 16) | (seal[63 - (i * 4)] << 24);
     }
+
     // Check if the seal number is less than the limit
     return lt(seal_number, limit) == -1;
 }
@@ -91,6 +91,14 @@ __global__ void test_sha256(BYTE* data, int size, BYTE* digest) {
     sha256(data, size, digest);
 }
 
+__global__ void test_seal_hash(BYTE* seal, BYTE* block_hash, unsigned long nonce) {
+    create_seal_hash(seal, block_hash, nonce);
+}
+
+__global__ void test_preseal_hash(BYTE* seal, BYTE* preseal_bytes) {
+    sha256(preseal_bytes, sizeof(BYTE) * 40, seal);
+}
+
 void pre_sha256() {
 	// copy symbols
 	checkCudaErrors(cudaMemcpyToSymbol(dev_k, host_k, sizeof(host_k), 0, cudaMemcpyHostToDevice));
@@ -107,10 +115,46 @@ void runTest(BYTE* data, unsigned long size, BYTE* digest) {
     BYTE* dev_digest;
     checkCudaErrors(cudaMallocManaged(&dev_data, size));
     checkCudaErrors(cudaMallocManaged(&dev_digest, sizeof(BYTE) * 64));
+    // Copy data to device
+    checkCudaErrors(cudaMemcpy(dev_data, data, size, cudaMemcpyHostToDevice));
 
     pre_sha256();
     test_sha256<<<1, 1>>>(dev_data, size, dev_digest);
+    cudaDeviceSynchronize();
     checkCudaErrors(cudaMemcpy(digest, dev_digest, 64, cudaMemcpyDeviceToHost));
+    cudaDeviceReset();
+}
+
+void runTestSealHash(BYTE* seal, BYTE* block_hash, unsigned long nonce) {
+    BYTE* dev_seal;
+    BYTE* dev_block_hash;
+    checkCudaErrors(cudaMallocManaged(&dev_seal, 64));
+    checkCudaErrors(cudaMallocManaged(&dev_block_hash, 32));
+    // Copy data to device
+    checkCudaErrors(cudaMemcpy(dev_block_hash, block_hash, 32, cudaMemcpyHostToDevice));
+
+    pre_sha256();
+
+    test_seal_hash<<<1, 1>>>(dev_seal, dev_block_hash, nonce);
+    cudaDeviceSynchronize();
+    checkCudaErrors(cudaMemcpy(seal, dev_seal, 64, cudaMemcpyDeviceToHost));
+    cudaDeviceReset();
+}
+
+void runTestPreSealHash(unsigned char* seal, unsigned char* preseal_bytes) {
+    BYTE* dev_seal;
+    BYTE* dev_preseal_bytes;
+    checkCudaErrors(cudaMallocManaged(&dev_seal, 64));
+    checkCudaErrors(cudaMallocManaged(&dev_preseal_bytes, 40));
+    // Copy data to device
+    checkCudaErrors(cudaMemcpy(dev_preseal_bytes, preseal_bytes, 40, cudaMemcpyHostToDevice));
+
+    pre_sha256();
+
+    test_preseal_hash<<<1, 1>>>(dev_seal, dev_preseal_bytes);
+    cudaDeviceSynchronize();
+    checkCudaErrors(cudaMemcpy(seal, dev_seal, 64, cudaMemcpyDeviceToHost));
+    cudaDeviceReset();
 }
 
 unsigned long solve_cuda_c(int blockSize, BYTE* seal, unsigned long* nonce_start, unsigned long update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes) {
@@ -144,15 +188,10 @@ unsigned long solve_cuda_c(int blockSize, BYTE* seal, unsigned long* nonce_start
     // Put limit in device memory.
     checkCudaErrors(cudaMemcpy(limit_d, limit, 8 * sizeof(unsigned long), cudaMemcpyHostToDevice));
 
-    // Set seal to 
-    for (int i = 0; i < 64; i++)
-	{
-		seal_d[i] = 0xff;
-        seal[i] = 0xff;
-	}
-
+    // Set seal to 0xff
+    checkCudaErrors(cudaMemset(seal_d, 0xff, 64 * sizeof(unsigned char)));
     // Zero solution
-    checkCudaErrors(cudaMemset(solution_d, 0, sizeof(unsigned long)));
+    solution_d[0] = 0;
 
 	pre_sha256();
 
