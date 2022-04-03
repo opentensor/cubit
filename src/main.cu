@@ -180,7 +180,6 @@ void runTestCreatePreSeal(unsigned char* pre_seal, uint64 nonce, unsigned char* 
     cudaDeviceReset();
 }
 
-
 void runTest(BYTE* data, unsigned long size, BYTE* digest) {
     // Test sha256
     BYTE* dev_data;
@@ -201,9 +200,9 @@ void runTestSealHash(BYTE* seal, BYTE* block_hash, uint64 nonce) {
     BYTE* dev_seal;
     BYTE* dev_block_hash;
     checkCudaErrors(cudaMallocManaged(&dev_seal, 64));
-    checkCudaErrors(cudaMallocManaged(&dev_block_hash, 32));
+    checkCudaErrors(cudaMallocManaged(&dev_block_hash, 64));
     // Copy data to device
-    checkCudaErrors(cudaMemcpy(dev_block_hash, block_hash, 32, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(dev_block_hash, block_hash, 64, cudaMemcpyHostToDevice));
 
     pre_sha256();
 
