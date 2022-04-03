@@ -12,6 +12,7 @@ cdef extern from "src/uint256.cuh":
     ctypedef unsigned long uint256[8]
 
 cdef extern from "src/main.hh":
+    void runTestCreatePreSeal(unsigned char* pre_seal, uint64 nonce, unsigned char* block_bytes);
     void runTestCreateNonceBytes(uint64 nonce, unsigned char* nonce_bytes);
     void runTestSealHash(unsigned char* seal, unsigned char* block_hash, uint64 nonce);
     void runTestPreSealHash(unsigned char* seal, unsigned char* preseal_bytes);
@@ -23,14 +24,11 @@ cpdef bytes run_test(unsigned char* data, unsigned long length):
         64 * sizeof(unsigned char))
 
     cdef unsigned long size = sizeof(unsigned char) * length
-    cdef bytes digest_str
 
     try:
         runTest(data, size, digest_)
-        # Convert digest to python string
-        digest_str = digest_
 
-        return digest_str
+        return digest_[:32]
     finally:
         PyMem_Free(digest_)
 
@@ -71,6 +69,18 @@ cpdef bytes run_test_create_nonce_bytes(uint64 nonce):
     finally:
         PyMem_Free(nonce_bytes)
 
+cpdef bytearray run_test_create_pre_seal(uint64 nonce, unsigned char* block_bytes):
+    cdef unsigned char* preseal_bytes = <unsigned char*> PyMem_Malloc(
+        40 * sizeof(unsigned char))
+    cdef int i
+
+    try:
+        runTestCreatePreSeal(preseal_bytes, nonce, block_bytes)
+
+        return bytearray(preseal_bytes[:40])
+    finally:
+        PyMem_Free(preseal_bytes)
+
 cpdef tuple solve_cuda(int blockSize, list nonce_start, uint64 update_interval, unsigned int n_nonces, uint64 difficulty, const unsigned char[:] limit, const unsigned char[:] block_bytes):
     cdef uint64 solution
 
@@ -78,7 +88,7 @@ cpdef tuple solve_cuda(int blockSize, list nonce_start, uint64 update_interval, 
         blockSize * sizeof(uint64))
 
     cdef unsigned char* block_bytes_c = <unsigned char*> PyMem_Malloc(
-        32 * sizeof(unsigned char))
+        64 * sizeof(unsigned char))
     
     cdef unsigned char* seal_ = <unsigned char*> PyMem_Malloc(
         64 * sizeof(unsigned char))
@@ -94,7 +104,7 @@ cpdef tuple solve_cuda(int blockSize, list nonce_start, uint64 update_interval, 
     for i in range(n_nonces):
         nonce_start_c[i] = nonce_start[i]
 
-    for i in range(32):
+    for i in range(64):
         block_bytes_c[i] = block_bytes[i]
     
     for i in range(32):

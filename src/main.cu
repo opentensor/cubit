@@ -56,15 +56,27 @@ __device__ void create_nonce_bytes(uint64 nonce, BYTE* nonce_bytes) {
     }
 }
 
-__device__ void create_seal_hash(BYTE* seal, BYTE* block_hash, uint64 nonce) {
-    BYTE pre_seal[40];
-    
-    create_nonce_bytes(nonce, pre_seal);
+__device__ void create_pre_seal(BYTE* pre_seal, BYTE* block_hash_bytes, uint64 nonce) {
+    BYTE pre_pre_seal[40];
+    create_nonce_bytes(nonce, pre_pre_seal);
 
-    // Store the block bytes at the end of pre_seal;
-    for (int i = 0; i < 32; i++) {
-        pre_seal[i + 8] = block_hash[i];
+    for (int i = 0; i < 32; i += 1) {
+        unsigned char high_bits = block_hash_bytes[2*i];
+        unsigned char low_bits = block_hash_bytes[2*i+1];
+        pre_pre_seal[i + 8] = high_bits * 16 + low_bits;
+        printf("%x %x = %x\n", high_bits, low_bits, pre_pre_seal[i + 8]);
     }
+    printf("\n");
+
+    for (int i = 0; i < 40; i++) {
+        pre_seal[i] = pre_pre_seal[i];
+    }
+}
+
+__device__ void create_seal_hash(BYTE* seal, BYTE* block_hash, uint64 nonce) {
+    BYTE pre_seal[40];    
+
+    create_pre_seal(pre_seal, block_hash, nonce);
     
     // Hash the pre_seal and store in seal;
     sha256(pre_seal, sizeof(BYTE) * 40, seal);     
@@ -96,6 +108,10 @@ __global__ void solve(BYTE* seal, uint64* solution, uint64* nonce_start, uint64 
 
 __global__ void test_create_nonce_bytes(uint64 nonce, BYTE* nonce_bytes) {
     create_nonce_bytes(nonce, nonce_bytes);
+}
+
+__global__ void test_create_preseal(BYTE* pre_seal, uint64 nonce, BYTE* block_bytes) {
+    create_pre_seal(pre_seal, block_bytes, nonce);
 }
 
 __global__ void test_sha256(BYTE* data, int size, BYTE* digest) {
@@ -131,6 +147,25 @@ void runTestCreateNonceBytes(uint64 nonce, BYTE* nonce_bytes) {
 
     cudaDeviceSynchronize();
     checkCudaErrors(cudaMemcpy(nonce_bytes, dev_nonce_bytes, sizeof(BYTE) * 8, cudaMemcpyDeviceToHost));
+    cudaDeviceReset();
+}
+
+void runTestCreatePreSeal(unsigned char* pre_seal, uint64 nonce, unsigned char* block_bytes) {
+    // Test sha256
+    BYTE* dev_pre_seal;
+    checkCudaErrors(cudaMallocManaged(&dev_pre_seal, sizeof(BYTE) * 40));
+
+    // malloc block_bytes
+    BYTE* dev_block_bytes;
+    checkCudaErrors(cudaMallocManaged(&dev_block_bytes, 64 * sizeof(BYTE)));
+    checkCudaErrors(cudaMemcpy(dev_block_bytes, block_bytes, 64 *  sizeof(BYTE), cudaMemcpyHostToDevice));
+
+    pre_sha256();
+
+    test_create_preseal<<<1, 1>>>(dev_pre_seal, nonce, dev_block_bytes);
+
+    cudaDeviceSynchronize();
+    checkCudaErrors(cudaMemcpy(pre_seal, dev_pre_seal, sizeof(BYTE) * 40, cudaMemcpyDeviceToHost));
     cudaDeviceReset();
 }
 
@@ -201,14 +236,14 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64* nonce_start, uint64 updat
     // Malloc space for nonce_start in device memory.
     checkCudaErrors(cudaMallocManaged(&nonce_start_d, n_nonces * sizeof(uint64)));
     // Malloc space for block_bytes in device memory. Should be 32 bytes.
-    checkCudaErrors(cudaMallocManaged(&block_bytes_d, 32 * sizeof(BYTE)));
+    checkCudaErrors(cudaMallocManaged(&block_bytes_d, 64 * sizeof(BYTE)));
     // Malloc space for limit in device memory.
     checkCudaErrors(cudaMallocManaged(&limit_d, 8 * sizeof(unsigned long)));
 
 	// Copy data to device memory
     printf("Copying memory to device\n");
 	// Put block bytes in device memory. Should be 32 bytes.
-	checkCudaErrors(cudaMemcpy(block_bytes_d, block_bytes, 32 * sizeof(BYTE), cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(block_bytes_d, block_bytes, 64 * sizeof(BYTE), cudaMemcpyHostToDevice));
 	// Put nonce_start in device memory. Should be a single int for each thread.
 	checkCudaErrors(cudaMemcpy(nonce_start_d, nonce_start, n_nonces * sizeof(uint64), cudaMemcpyHostToDevice));
     // Put limit in device memory.
