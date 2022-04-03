@@ -56,17 +56,28 @@ __device__ void create_nonce_bytes(uint64 nonce, BYTE* nonce_bytes) {
     }
 }
 
+__device__ int convert_from_ascii_to_int(BYTE ascii_bytes) {
+    // Convert the ascii bytes to an integer
+    // The ascii bytes are in the form of a hexadecimal number
+    int result = 0;
+    if (ascii_bytes >= '0' && ascii_bytes <= '9') {
+        result = ascii_bytes - '0';
+    } else if (ascii_bytes >= 'a' && ascii_bytes <= 'f') {
+        result = ascii_bytes - 'a' + 10;
+    }
+    return result;
+}
+
 __device__ void create_pre_seal(BYTE* pre_seal, BYTE* block_hash_bytes, uint64 nonce) {
     BYTE pre_pre_seal[40];
     create_nonce_bytes(nonce, pre_pre_seal);
 
     for (int i = 0; i < 32; i += 1) {
+        // Convert each into ascii and then hex
         unsigned char high_bits = block_hash_bytes[2*i];
         unsigned char low_bits = block_hash_bytes[2*i+1];
-        pre_pre_seal[i + 8] = high_bits * 16 + low_bits;
-        printf("%x %x = %x\n", high_bits, low_bits, pre_pre_seal[i + 8]);
+        pre_pre_seal[i + 8] = convert_from_ascii_to_int(high_bits) * 16 + convert_from_ascii_to_int(low_bits);
     }
-    printf("\n");
 
     for (int i = 0; i < 40; i++) {
         pre_seal[i] = pre_pre_seal[i];
