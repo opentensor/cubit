@@ -1,9 +1,14 @@
+#!python
+#cython: language_level=3
+
 from cpython cimport array
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
 from libc.string cimport memcpy
 from libc.stdio cimport printf
 import array
 
+cdef extern from "src/uint128.hh":
+    ctypedef int int128
 
 cdef extern from "src/uint64.cuh":
     ctypedef unsigned long long uint64;
@@ -81,8 +86,9 @@ cpdef bytearray run_test_create_pre_seal(uint64 nonce, unsigned char* block_byte
     finally:
         PyMem_Free(preseal_bytes)
 
-cpdef tuple solve_cuda(int blockSize, list nonce_start, uint64 update_interval, unsigned int n_nonces, uint64 difficulty, const unsigned char[:] limit, const unsigned char[:] block_bytes):
+cpdef tuple solve_cuda(int blockSize, list nonce_start, uint64 update_interval, unsigned int n_nonces, const unsigned char[:] limit, const unsigned char[:] block_bytes):
     cdef uint64 solution
+    cdef int128 solution_128
 
     cdef uint64* nonce_start_c = <uint64*> PyMem_Malloc(
         blockSize * sizeof(uint64))
@@ -115,9 +121,10 @@ cpdef tuple solve_cuda(int blockSize, list nonce_start, uint64 update_interval, 
 
     try:
         solution = solve_cuda_c(blockSize, seal_, nonce_start_c, update_interval, n_nonces, limit_, block_bytes_c);
-        return (solution, seal_[:32])
+        solution_128 = solution
+        return (solution_128 - 1, bytearray(seal_[:32]))
     finally:
-        PyMem_Free(nonce_start_c)
+        PyMem_Free(nonce_start_c)    
         PyMem_Free(block_bytes_c)
         PyMem_Free(seal_)
         PyMem_Free(limit_)

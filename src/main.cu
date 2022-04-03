@@ -42,11 +42,16 @@ __device__ bool seal_meets_difficulty(BYTE* seal, uint256 limit) {
     
     // Seal is big-endian, and we want little-endian
     for (int i = 0; i < 8; i++) {
-        seal_number[i] = seal[60 - (i * 4)] | (seal[61 - (i * 4)] << 8) | (seal[62 - (i * 4)] << 16) | (seal[63 - (i * 4)] << 24);
+        unsigned long byte_0 = (unsigned long)seal[31 - (i * 4)] << 24;
+        unsigned long byte_1 = (unsigned long)seal[30 - (i * 4)] << 16;
+        unsigned long byte_2 = (unsigned long)seal[29 - (i * 4)] << 8;
+        unsigned long byte_3 = (unsigned long)seal[28 - (i * 4)];
+        seal_number[i] = byte_0 | byte_1 | byte_2 | byte_3;
     }
 
     // Check if the seal number is less than the limit
-    return lt(seal_number, limit) == -1;
+    int under_limit = lt(seal_number, limit);
+    return under_limit == -1;
 }
 
 __device__ void create_nonce_bytes(uint64 nonce, BYTE* nonce_bytes) {
@@ -105,7 +110,7 @@ __global__ void solve(BYTE* seal, uint64* solution, uint64* nonce_start, uint64 
                     uint64 j = nonce; j < nonce + update_interval; j++) {
                     create_seal_hash(seal_, block_bytes, j);
                     if (seal_meets_difficulty(seal_, limit)) {
-                        solution[i] = j;
+                        solution[i] = j + 1;
 
                         // Copy seal to shared memory
                         for (int k = 0; k < 64; k++) {
@@ -259,10 +264,10 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64* nonce_start, uint64 updat
     // Put limit in device memory.
     checkCudaErrors(cudaMemcpy(limit_d, limit, 8 * sizeof(unsigned long), cudaMemcpyHostToDevice));
 
-    // Set seal to 0xff
-    checkCudaErrors(cudaMemset(seal_d, 0xff, 64 * sizeof(unsigned char)));
-
 	pre_sha256();
+
+    // Zero out solution
+    checkCudaErrors(cudaMemset(solution_d, 0, sizeof(uint64)));
 
     // Running Solve on GPU
     printf("Running solve on GPU\n");
@@ -272,7 +277,7 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64* nonce_start, uint64 updat
     
     // Copy data back to host memory
     printf("Copying memory to host\n");
-    checkCudaErrors(cudaMemcpy(solution, solution_d, 2 * sizeof(unsigned long), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(solution, solution_d, sizeof(uint64), cudaMemcpyDeviceToHost));
     checkCudaErrors(cudaMemcpy(seal, seal_d, 64 * sizeof(BYTE), cudaMemcpyDeviceToHost));
     
 	cudaDeviceReset();
