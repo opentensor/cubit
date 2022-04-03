@@ -244,7 +244,7 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64* nonce_start, uint64 updat
     // Allocate memory on device
     
     // Malloc space for solution in device memory. Should be a single unsigned long.
-    printf("Allocating memory on device\n");
+    //printf("Allocating memory on device\n");
     checkCudaErrors(cudaMallocManaged(&solution_d, sizeof(uint64)));
     // Malloc space for seal in device memory. Should be one seal.
     checkCudaErrors(cudaMallocManaged(&seal_d, 64 * sizeof(BYTE)));
@@ -256,7 +256,7 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64* nonce_start, uint64 updat
     checkCudaErrors(cudaMallocManaged(&limit_d, 8 * sizeof(unsigned long)));
 
 	// Copy data to device memory
-    printf("Copying memory to device\n");
+    //printf("Copying memory to device\n");
 	// Put block bytes in device memory. Should be 32 bytes.
 	checkCudaErrors(cudaMemcpy(block_bytes_d, block_bytes, 64 * sizeof(BYTE), cudaMemcpyHostToDevice));
 	// Put nonce_start in device memory. Should be a single int for each thread.
@@ -270,13 +270,13 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64* nonce_start, uint64 updat
     checkCudaErrors(cudaMemset(solution_d, 0, sizeof(uint64)));
 
     // Running Solve on GPU
-    printf("Running solve on GPU\n");
+    //printf("Running solve on GPU\n");
 	runSolve(blockSize, seal_d, solution_d, nonce_start_d, update_interval, n_nonces, limit_d, block_bytes_d);
 
 	cudaDeviceSynchronize();
     
     // Copy data back to host memory
-    printf("Copying memory to host\n");
+    //printf("Copying memory to host\n");
     checkCudaErrors(cudaMemcpy(solution, solution_d, sizeof(uint64), cudaMemcpyDeviceToHost));
     checkCudaErrors(cudaMemcpy(seal, seal_d, 64 * sizeof(BYTE), cudaMemcpyDeviceToHost));
     
