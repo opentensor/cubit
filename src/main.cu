@@ -123,6 +123,7 @@ __global__ void solve(BYTE** seal, uint64* solution, uint64* nonce_start, uint64
                 for (
                     uint64 j = nonce; j < nonce + update_interval; j++) {
                     create_seal_hash(seal_, block_bytes, j);
+                    
                     if (seal_meets_difficulty(seal_, limit)) {
                         printf("Found solution: %llu\n", j);
                         solution[i] = j + 1;
@@ -135,9 +136,13 @@ __global__ void solve(BYTE** seal, uint64* solution, uint64* nonce_start, uint64
                         }
                         found = true;
                         return;
-                    }          
+                    }
                 }
             }            
+}
+
+__global__ void test_lt(uint256 a, uint256 b, int* result) {
+    result[0] = lt(a, b);
 }
 
 __global__ void test_create_nonce_bytes(uint64 nonce, BYTE* nonce_bytes) {
@@ -249,6 +254,26 @@ void runTestPreSealHash(unsigned char* seal, unsigned char* preseal_bytes) {
     cudaDeviceSynchronize();
     checkCudaErrors(cudaMemcpy(seal, dev_seal, 64, cudaMemcpyDeviceToHost));
     cudaDeviceReset();
+}
+
+int runTestLessThan(uint256 a, uint256 b) {
+    unsigned long* dev_a;
+    unsigned long* dev_b;
+    int* dev_result;
+    int result[1];
+    checkCudaErrors(cudaMallocManaged(&dev_a, 8 * sizeof(unsigned long)));
+    checkCudaErrors(cudaMallocManaged(&dev_b, 8 * sizeof(unsigned long)));
+    checkCudaErrors(cudaMallocManaged(&dev_result, sizeof(int)));
+    // Copy data to device
+    checkCudaErrors(cudaMemcpy(dev_a, a, 8 * sizeof(unsigned long), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(dev_b, b, 8 * sizeof(unsigned long), cudaMemcpyHostToDevice));
+    
+    test_lt<<<1, 1>>>(dev_a, dev_b, dev_result);
+    cudaDeviceSynchronize();
+    checkCudaErrors(cudaMemcpy(&result, dev_result, sizeof(int), cudaMemcpyDeviceToHost));
+    cudaDeviceReset();
+
+    return result[0];
 }
 
 uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64* nonce_start, uint64 update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes) {

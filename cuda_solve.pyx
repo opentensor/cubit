@@ -17,6 +17,7 @@ cdef extern from "src/uint256.cuh":
     ctypedef unsigned long uint256[8]
 
 cdef extern from "src/main.hh":
+    int runTestLessThan(uint256 a, uint256 b);
     void runTestCreatePreSeal(unsigned char* pre_seal, uint64 nonce, unsigned char* block_bytes);
     void runTestCreateNonceBytes(uint64 nonce, unsigned char* nonce_bytes);
     void runTestSealHash(unsigned char* seal, unsigned char* block_hash, uint64 nonce);
@@ -73,6 +74,42 @@ cpdef bytes run_test_create_nonce_bytes(uint64 nonce):
         return nonce_bytes[:8]
     finally:
         PyMem_Free(nonce_bytes)
+
+cpdef int run_test_less_than(const unsigned char[:] a, const unsigned char[:] b):
+    cdef unsigned long* a_ = <unsigned long*> PyMem_Malloc(
+        8 * sizeof(unsigned long))
+
+    cdef unsigned char* a_char = <unsigned char*> PyMem_Malloc(
+        32 * sizeof(unsigned char))
+
+    cdef unsigned long* b_ = <unsigned long*> PyMem_Malloc(
+        8 * sizeof(unsigned long))
+
+    cdef unsigned char* b_char = <unsigned char*> PyMem_Malloc(
+        32 * sizeof(unsigned char))
+
+    cdef int result
+
+    for i in range(32):
+        a_char[i] = a[i]
+
+    # Note sure if this will work
+    memcpy(a_, a_char , 8 * sizeof(unsigned long))
+
+    for i in range(32):
+        b_char[i] = b[i]
+
+    # Note sure if this will work
+    memcpy(b_, b_char , 8 * sizeof(unsigned long))
+
+    try:
+        result = runTestLessThan(a_, b_)
+        return result
+    finally:
+        PyMem_Free(a_)
+        PyMem_Free(b_)
+        PyMem_Free(a_char)
+        PyMem_Free(b_char)
 
 cpdef bytearray run_test_create_pre_seal(uint64 nonce, unsigned char* block_bytes):
     cdef unsigned char* preseal_bytes = <unsigned char*> PyMem_Malloc(

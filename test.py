@@ -1,7 +1,7 @@
 import struct
 from typing import List
 from numpy import block, byte, diff
-from bittensor_register_cuda import solve_cuda, run_test, run_test_seal_hash, run_test_preseal_hash, run_test_create_nonce_bytes, run_test_create_pre_seal
+from bittensor_register_cuda import solve_cuda, run_test, run_test_seal_hash, run_test_preseal_hash, run_test_create_nonce_bytes, run_test_create_pre_seal, run_test_less_than
 import math
 import hashlib
 import binascii
@@ -24,7 +24,7 @@ def seal_meets_difficulty( seal:bytes, difficulty:int ):
 st = bt.subtensor(network="endpoint",chain_endpoint="subtensor.fairchild.dev:9944")
 bn = st.get_current_block()
 bh = st.substrate.get_block_hash(bn)
-difficulty = 1000 #st.difficulty
+difficulty = 10000 #st.difficulty
 limit = int(math.pow(2,256)) - 1
 upper = int(limit // difficulty)
 print(limit, difficulty, upper)
@@ -70,6 +70,14 @@ nonce_bytes = binascii.hexlify(nonce.to_bytes(8, 'little'))
 pre_seal = nonce_bytes + block_bytes
 seal_2 = hashlib.sha256( bytearray(hex_bytes_to_u8_list(pre_seal)) ).digest()
 print(seal, "\n", seal_2, "\n", seal == seal_2)
+
+# Test less than
+a = int(math.pow(2,256)) - 1
+b = int(math.pow(2,256)) - 4
+a = a.to_bytes(32, byteorder='little', signed=False)
+b = b.to_bytes(32, byteorder='little', signed=False)
+result = run_test_less_than(a, b)
+print("Test lt: ", result == -1)
 
 # Test a solve
 solution = -1
