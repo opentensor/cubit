@@ -49,9 +49,9 @@ __device__ bool seal_meets_difficulty(BYTE* seal, uint256 limit) {
 
     // Convert the seal_number to a uint256
     // seal_ is little endian
-    for (int i = 0; i < 32; i++) {
-        seal_number[i/4] =  (uint32_t)seal[i] | (uint32_t)seal[i+1] << 8
-        | (uint32_t)seal[i+2] << 16 | (uint32_t)seal[i+3] << 24;
+    for (int i = 0; i < 32; i += 4) {
+        seal_number[i/4] =  (uint32_t)seal_[i] | (uint32_t)seal_[i+1] << 8
+        | (uint32_t)seal_[i+2] << 16 | (uint32_t)seal_[i+3] << 24;
     }
 
     // Check if the seal number is less than the limit
@@ -131,7 +131,7 @@ __global__ void solve(BYTE** seal, uint64* solution, uint64* nonce_start, uint64
                         for (int k = 0; k < 64; k++) {
                             seal[i][k] = seal_[k];
                             // print the seal
-                            printf("%02x ", seal_[k]);
+                            //printf("%02x ", seal_[k]);
                         }
                         found = true;
                         return;

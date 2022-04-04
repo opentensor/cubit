@@ -14,16 +14,17 @@ def hex_bytes_to_u8_list( hex_bytes: bytes ):
 def seal_meets_difficulty( seal:bytes, difficulty:int ):
     seal_number = int.from_bytes(seal, "big")
     product = seal_number * difficulty
-    limit = int(math.pow(2,256))- 1    
-    if product > limit:
-        return False
-    else:
-        return True
+    limit = int(math.pow(2,256))- 1
+    upper = int(limit // difficulty)
+    print(f"\nseal_number: {seal_number}")
+    print(f"upper: {upper}")
+    print(seal_number < upper)
+    return product <= limit
 
 st = bt.subtensor(network="endpoint",chain_endpoint="subtensor.fairchild.dev:9944")
 bn = st.get_current_block()
 bh = st.substrate.get_block_hash(bn)
-difficulty = st.difficulty
+difficulty = 1000 #st.difficulty
 limit = int(math.pow(2,256)) - 1
 upper = int(limit // difficulty)
 print(limit, difficulty, upper)
@@ -71,8 +72,20 @@ seal_2 = hashlib.sha256( bytearray(hex_bytes_to_u8_list(pre_seal)) ).digest()
 print(seal, "\n", seal_2, "\n", seal == seal_2)
 
 # Test a solve
-solution, seal = solve_cuda(4, [0, 20000, 40000, 60000, 80000], 20000, 5, difficulty, upper_bytes, block_bytes)
+solution = -1
+interval = 50000
+start_nonce = 0
+while solution == -1:
+    nonces = [nonce for nonce in range(start_nonce, start_nonce+interval*4, interval)]
+    start_nonce += interval*4
+    solution, seal = solve_cuda(4, nonces, interval, 4, upper_bytes, block_bytes)
 print(seal_meets_difficulty(seal, difficulty))
+
+nonce_bytes = binascii.hexlify(solution.to_bytes(8, 'little'))
+seal_1 = hashlib.sha256( bytearray(hex_bytes_to_u8_list(nonce_bytes + block_bytes)) ).digest()
 print(solution, seal)
+print(solution, seal_1)
+print(seal_meets_difficulty(seal_1, difficulty))
+
 
 
