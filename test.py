@@ -1,7 +1,7 @@
 import struct
 from typing import List
 from numpy import block, byte, diff
-from bittensor_register_cuda import solve_cuda, run_test, run_test_seal_hash, run_test_preseal_hash, run_test_create_nonce_bytes, run_test_create_pre_seal, run_test_less_than, run_test_seal_meets_difficulty
+from bittensor_register_cuda import solve_cuda, run_test, run_test_seal_hash, run_test_preseal_hash, run_test_create_nonce_bytes, run_test_create_pre_seal, run_test_less_than, run_test_seal_meets_difficulty, reset_cuda
 import math
 import hashlib
 import binascii
@@ -125,4 +125,4 @@ print(seal_meets_difficulty(seal_1, difficulty))
 check = run_test_seal_meets_difficulty(seal, upper_bytes)
 print(check)
 
-
+reset_cuda()
