@@ -15,6 +15,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 __device__ int lt(uint256 a, uint256 b) {
+    // Check if a is less than b
     // Assumes a and b are little-endian
     // This is correct for CUDA
     // https://stackoverflow.com/questions/15356622/anyone-know-whether-nvidias-gpus-are-big-or-little-endian
@@ -38,15 +39,19 @@ __device__ void sha256(unsigned char* data, unsigned long size, unsigned char* d
 
 __device__ bool seal_meets_difficulty(BYTE* seal, uint256 limit) {
     // Need a 256 bit integer to store the seal number
+    BYTE seal_[32];
     uint256 seal_number;
-    
-    // Seal is big-endian, and we want little-endian
-    for (int i = 0; i < 8; i++) {
-        unsigned long byte_0 = (unsigned long)seal[31 - (i * 4)] << 24;
-        unsigned long byte_1 = (unsigned long)seal[30 - (i * 4)] << 16;
-        unsigned long byte_2 = (unsigned long)seal[29 - (i * 4)] << 8;
-        unsigned long byte_3 = (unsigned long)seal[28 - (i * 4)];
-        seal_number[i] = byte_0 | byte_1 | byte_2 | byte_3;
+
+    // Reverse 32 byte array to get little-endian
+    for (int i = 0; i < 32; i++) {
+        seal_[i] = seal[31-i];
+    }
+
+    // Convert the seal_number to a uint256
+    // seal_ is little endian
+    for (int i = 0; i < 32; i++) {
+        seal_number[i/4] =  (uint32_t)seal[i] | (uint32_t)seal[i+1] << 8
+        | (uint32_t)seal[i+2] << 16 | (uint32_t)seal[i+3] << 24;
     }
 
     // Check if the seal number is less than the limit
@@ -98,25 +103,38 @@ __device__ void create_seal_hash(BYTE* seal, BYTE* block_hash, uint64 nonce) {
     sha256(pre_seal, sizeof(BYTE) * 40, seal);     
 }
 
-__global__ void solve(BYTE* seal, uint64* solution, uint64* nonce_start, uint64 update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes) {
+__global__ void solve(BYTE** seal, uint64* solution, uint64* nonce_start, uint64 update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes) {
+        __shared__ bool found;
+        found = false;
         BYTE seal_[64];
+        // Make the seal all 0xff
+        for (int j = 0; j < 64; j++) {
+            seal_[j] = 0xff;
+        }
         
         for (unsigned int i = blockIdx.x * blockDim.x + threadIdx.x; 
                 i < n_nonces; 
                 i += blockDim.x * gridDim.x) 
             {
+                if (found) {
+                    return;
+                }
                 uint64 nonce = nonce_start[i];
                 for (
                     uint64 j = nonce; j < nonce + update_interval; j++) {
                     create_seal_hash(seal_, block_bytes, j);
                     if (seal_meets_difficulty(seal_, limit)) {
+                        printf("Found solution: %llu\n", j);
                         solution[i] = j + 1;
 
                         // Copy seal to shared memory
                         for (int k = 0; k < 64; k++) {
-                            seal[k] = seal_[k];
+                            seal[i][k] = seal_[k];
+                            // print the seal
+                            printf("%02x ", seal_[k]);
                         }
-                        break;
+                        found = true;
+                        return;
                     }          
                 }
             }            
@@ -147,7 +165,7 @@ void pre_sha256() {
 	checkCudaErrors(cudaMemcpyToSymbol(dev_k, host_k, sizeof(host_k), 0, cudaMemcpyHostToDevice));
 }
 
-void runSolve(int blockSize, BYTE* seal, uint64* solution, uint64* nonce_start, uint64 update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes) {
+void runSolve(int blockSize, BYTE** seal, uint64* solution, uint64* nonce_start, uint64 update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes) {
 	int numBlocks = (n_nonces + blockSize - 1) / blockSize;
 	solve <<< numBlocks, blockSize >>> (seal, solution, nonce_start, update_interval, n_nonces, limit, block_bytes);
 }
@@ -236,18 +254,22 @@ void runTestPreSealHash(unsigned char* seal, unsigned char* preseal_bytes) {
 uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64* nonce_start, uint64 update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes) {
 	uint64* nonce_start_d;
 	unsigned char* block_bytes_d;
-    BYTE* seal_d;
+    BYTE** seal_d;
     uint64* solution_d;
-    uint64 solution[1] = {0};
+    uint64 solutions[n_nonces];
+    uint64 solution = 0;
     unsigned long* limit_d;
 
     // Allocate memory on device
     
     // Malloc space for solution in device memory. Should be a single unsigned long.
     //printf("Allocating memory on device\n");
-    checkCudaErrors(cudaMallocManaged(&solution_d, sizeof(uint64)));
-    // Malloc space for seal in device memory. Should be one seal.
-    checkCudaErrors(cudaMallocManaged(&seal_d, 64 * sizeof(BYTE)));
+    checkCudaErrors(cudaMallocManaged(&solution_d, n_nonces * sizeof(uint64)));
+    checkCudaErrors(cudaMallocManaged(&seal_d, n_nonces * sizeof(BYTE*)));
+    // Malloc space for each seal in device memory
+    for (int i = 0; i < n_nonces; i++) {
+        checkCudaErrors(cudaMallocManaged(&seal_d[i], 64 * sizeof(BYTE)));
+    }
     // Malloc space for nonce_start in device memory.
     checkCudaErrors(cudaMallocManaged(&nonce_start_d, n_nonces * sizeof(uint64)));
     // Malloc space for block_bytes in device memory. Should be 32 bytes.
@@ -277,9 +299,16 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64* nonce_start, uint64 updat
     
     // Copy data back to host memory
     //printf("Copying memory to host\n");
-    checkCudaErrors(cudaMemcpy(solution, solution_d, sizeof(uint64), cudaMemcpyDeviceToHost));
-    checkCudaErrors(cudaMemcpy(seal, seal_d, 64 * sizeof(BYTE), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(solutions, solution_d, n_nonces * sizeof(uint64), cudaMemcpyDeviceToHost));
+    // Check if solution is valid
+    for (int i = 0; i < n_nonces; i++) {
+        if (solutions[i] != 0) {
+            solution = solutions[i];
+            checkCudaErrors(cudaMemcpy(seal, seal_d[i], 64 * sizeof(BYTE), cudaMemcpyDeviceToHost));
+            break;
+        }
+    }
     
 	cudaDeviceReset();
-    return solution[0];
+    return solution;
 }
