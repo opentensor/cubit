@@ -97,7 +97,7 @@ __device__ void create_seal_hash(BYTE* seal, BYTE* block_hash, uint64 nonce) {
     sha256(pre_seal, sizeof(BYTE) * 40, seal);     
 }
 
-__global__ void solve(BYTE** seal, uint64* solution, uint64* nonce_start, uint64 update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes) {
+__global__ void solve(BYTE** seal, uint64* solution, uint64 nonce_start, uint64 update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes) {
         __shared__ bool found;
         found = false;
         BYTE seal_[64];
@@ -111,9 +111,9 @@ __global__ void solve(BYTE** seal, uint64* solution, uint64* nonce_start, uint64
                 i += blockDim.x * gridDim.x) 
             {
                 if (found) {
-                    return;
+                    break;
                 }
-                uint64 nonce = nonce_start[i];
+                uint64 nonce = nonce_start + i * update_interval;
                 for (
                     uint64 j = nonce; j < nonce + update_interval; j++) {
                     create_seal_hash(seal_, block_bytes, j);
@@ -122,18 +122,18 @@ __global__ void solve(BYTE** seal, uint64* solution, uint64* nonce_start, uint64
                         solution[i] = j + 1;
 
                         // Copy seal to shared memory
-                        for (int k = 0; k < 64; k++) {
-                            seal[i][k] = seal_[k];
+                       // for (int k = 0; k < 64; k++) {
+                         //   seal[i][k] = seal_[k];
                             // print the seal
                             //if (k == 32) {
                             //    printf("i = 32;\n");
                             //}
                             //printf("%02x ", seal_[k]);
                         
-                        }
+                        //}
                         //printf("\n");
                         found = true;
-                        return;
+                        break;
                     }
                 }
             }            
@@ -172,9 +172,9 @@ void pre_sha256() {
 	checkCudaErrors(cudaMemcpyToSymbol(dev_k, host_k, sizeof(host_k), 0, cudaMemcpyHostToDevice));
 }
 
-void runSolve(int blockSize, BYTE** seal, uint64* solution, uint64* nonce_start, uint64 update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes) {
-	int numBlocks = (n_nonces + blockSize - 1) / blockSize;
-	solve <<< numBlocks, blockSize >>> (seal, solution, nonce_start, update_interval, n_nonces, limit, block_bytes);
+void runSolve(int blockSize, BYTE** seal, uint64* solution, uint64 nonce_start, uint64 update_interval, uint256 limit, BYTE* block_bytes) {
+	int numBlocks = (blockSize + blockSize - 1) / blockSize;
+	solve <<< numBlocks, blockSize >>> (seal, solution, nonce_start, update_interval, blockSize, limit, block_bytes);
 }
 
 bool runTestSealMeetsDifficulty(BYTE* seal, uint256 limit) {
@@ -300,27 +300,33 @@ int runTestLessThan(uint256 a, uint256 b) {
     return result[0];
 }
 
-uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64* nonce_start, uint64 update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes) {
-	uint64* nonce_start_d;
+uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update_interval, uint256 limit, BYTE* block_bytes) {
 	unsigned char* block_bytes_d;
-    BYTE** seal_d;
+    unsigned char* block_bytes_h;
+    //BYTE** seal_d;
     uint64* solution_d;
-    uint64 solutions[n_nonces];
+    uint64* solutions;
     uint64 solution = 0;
     unsigned long* limit_d;
+    unsigned long* limit_h;
 
+    // Allocate pinned memory on host. This should speed up the data transfer back.
+    checkCudaErrors(cudaMallocHost((void**)&solutions, blockSize * 8 * sizeof(unsigned long)));
+    checkCudaErrors(cudaMallocHost((void**)&block_bytes_h, 64 * sizeof(BYTE)));
+    checkCudaErrors(cudaMallocHost((void**)&limit_h, 8 * sizeof(unsigned long)));
+    // Copy into pinned memory
+    memcpy(block_bytes_h, block_bytes, 64 * sizeof(BYTE));
+    memcpy(limit_h, limit, 8 * sizeof(unsigned long));
     // Allocate memory on device
     
     // Malloc space for solution in device memory. Should be a single unsigned long.
     //printf("Allocating memory on device\n");
-    checkCudaErrors(cudaMallocManaged(&solution_d, n_nonces * sizeof(uint64)));
-    checkCudaErrors(cudaMallocManaged(&seal_d, n_nonces * sizeof(BYTE*)));
+    checkCudaErrors(cudaMallocManaged(&solution_d, blockSize * sizeof(uint64)));
+    //checkCudaErrors(cudaMallocManaged(&seal_d, blockSize * sizeof(BYTE*)));
     // Malloc space for each seal in device memory
-    for (int i = 0; i < n_nonces; i++) {
-        checkCudaErrors(cudaMallocManaged(&seal_d[i], 64 * sizeof(BYTE)));
-    }
-    // Malloc space for nonce_start in device memory.
-    checkCudaErrors(cudaMallocManaged(&nonce_start_d, n_nonces * sizeof(uint64)));
+    //for (int i = 0; i < blockSize; i++) {
+    //    checkCudaErrors(cudaMallocManaged(&seal_d[i], 64 * sizeof(BYTE)));
+    //}
     // Malloc space for block_bytes in device memory. Should be 32 bytes.
     checkCudaErrors(cudaMallocManaged(&block_bytes_d, 64 * sizeof(BYTE)));
     // Malloc space for limit in device memory.
@@ -329,11 +335,9 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64* nonce_start, uint64 updat
 	// Copy data to device memory
     //printf("Copying memory to device\n");
 	// Put block bytes in device memory. Should be 32 bytes.
-	checkCudaErrors(cudaMemcpy(block_bytes_d, block_bytes, 64 * sizeof(BYTE), cudaMemcpyHostToDevice));
-	// Put nonce_start in device memory. Should be a single int for each thread.
-	checkCudaErrors(cudaMemcpy(nonce_start_d, nonce_start, n_nonces * sizeof(uint64), cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(block_bytes_d, block_bytes_h, 64 * sizeof(BYTE), cudaMemcpyHostToDevice));
     // Put limit in device memory.
-    checkCudaErrors(cudaMemcpy(limit_d, limit, 8 * sizeof(unsigned long), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(limit_d, limit_h, 8 * sizeof(unsigned long), cudaMemcpyHostToDevice));
 
 	pre_sha256();
 
@@ -341,23 +345,34 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64* nonce_start, uint64 updat
     checkCudaErrors(cudaMemset(solution_d, 0, sizeof(uint64)));
 
     // Running Solve on GPU
-    //printf("Running solve on GPU\n");
-	runSolve(blockSize, seal_d, solution_d, nonce_start_d, update_interval, n_nonces, limit_d, block_bytes_d);
+	runSolve(blockSize, NULL, solution_d, nonce_start, update_interval, limit_d, block_bytes_d);
 
 	cudaDeviceSynchronize();
     
     // Copy data back to host memory
-    //printf("Copying memory to host\n");
-    checkCudaErrors(cudaMemcpy(solutions, solution_d, n_nonces * sizeof(uint64), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(solutions, solution_d, blockSize * sizeof(uint64), cudaMemcpyDeviceToHost));
     // Check if solution is valid
-    for (int i = 0; i < n_nonces; i++) {
+    for (int i = 0; i < blockSize; i++) {
         if (solutions[i] != 0) {
             solution = solutions[i];
-            checkCudaErrors(cudaMemcpy(seal, seal_d[i], 64 * sizeof(BYTE), cudaMemcpyDeviceToHost));
+            //checkCudaErrors(cudaMemcpy(seal, seal_d[i], 64 * sizeof(BYTE), cudaMemcpyDeviceToHost));
             break;
         }
     }
+
     
-	cudaDeviceReset();
+    // Free memory
+    checkCudaErrors(cudaFree(solution_d));
+    checkCudaErrors(cudaFree(block_bytes_d));
+    checkCudaErrors(cudaFree(limit_d));
+
+    checkCudaErrors(cudaFreeHost(solutions));
+    checkCudaErrors(cudaFreeHost(block_bytes_h));
+    checkCudaErrors(cudaFreeHost(limit_h));	
     return solution;
+}
+
+
+void reset_cuda_c() {
+    cudaDeviceReset();
 }
