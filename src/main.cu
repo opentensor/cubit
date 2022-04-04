@@ -19,11 +19,13 @@ __device__ int lt(uint256 a, uint256 b) {
     // Assumes a and b are little-endian
     // This is correct for CUDA
     // https://stackoverflow.com/questions/15356622/anyone-know-whether-nvidias-gpus-are-big-or-little-endian
-    
-    for (int i = 8 - 1; i >= 0; i--) {
-        if (a[i] < b[i]) {
+    BYTE* a_ = (BYTE*)a;
+    BYTE* b_ = (BYTE*)b;
+
+    for (int i = 32 - 1; i >= 0; i--) {
+        if (a_[i] < b_[i]) {
             return -1;
-        } else if (a[i] > b[i]) {
+        } else if (a_[i] > b_[i]) {
             return 1;
         }
     }
@@ -165,6 +167,10 @@ __global__ void test_preseal_hash(BYTE* seal, BYTE* preseal_bytes) {
     sha256(preseal_bytes, sizeof(BYTE) * 40, seal);
 }
 
+__global__ void test_seal_meets_difficulty(BYTE* seal, uint256 limit, bool* result) {
+    seal_meets_difficulty(seal, limit);
+}
+
 void pre_sha256() {
 	// copy symbols
 	checkCudaErrors(cudaMemcpyToSymbol(dev_k, host_k, sizeof(host_k), 0, cudaMemcpyHostToDevice));
@@ -175,8 +181,30 @@ void runSolve(int blockSize, BYTE** seal, uint64* solution, uint64* nonce_start,
 	solve <<< numBlocks, blockSize >>> (seal, solution, nonce_start, update_interval, n_nonces, limit, block_bytes);
 }
 
+bool runTestSealMeetsDifficulty(BYTE* seal, uint256 limit) {
+    BYTE* dev_seal;
+    unsigned long* dev_limit;
+    bool* dev_result;
+
+    bool result;
+
+    checkCudaErrors(cudaMallocManaged(&dev_seal, sizeof(BYTE) * 32));
+    checkCudaErrors(cudaMallocManaged(&dev_limit, 8 * sizeof(unsigned long)));
+    checkCudaErrors(cudaMallocManaged(&dev_result, sizeof(bool)));
+
+    checkCudaErrors(cudaMemcpy(dev_seal, seal, sizeof(BYTE) * 32, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(dev_limit, limit, 8 * sizeof(unsigned long), cudaMemcpyHostToDevice));
+    
+    test_seal_meets_difficulty <<< 1, 1 >>> (seal, limit, dev_result);
+
+    cudaDeviceSynchronize();
+    checkCudaErrors(cudaMemcpy(&result, dev_result, sizeof(bool), cudaMemcpyDeviceToHost));
+    cudaDeviceReset();
+
+    return result;
+}
+
 void runTestCreateNonceBytes(uint64 nonce, BYTE* nonce_bytes) {
-    // Test sha256
     BYTE* dev_nonce_bytes;
     checkCudaErrors(cudaMallocManaged(&dev_nonce_bytes, sizeof(BYTE) * 8));
 
@@ -263,14 +291,14 @@ int runTestLessThan(uint256 a, uint256 b) {
     int result[1];
     checkCudaErrors(cudaMallocManaged(&dev_a, 8 * sizeof(unsigned long)));
     checkCudaErrors(cudaMallocManaged(&dev_b, 8 * sizeof(unsigned long)));
-    checkCudaErrors(cudaMallocManaged(&dev_result, sizeof(int)));
+    checkCudaErrors(cudaMallocManaged(&dev_result, 1 * sizeof(int)));
     // Copy data to device
     checkCudaErrors(cudaMemcpy(dev_a, a, 8 * sizeof(unsigned long), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMemcpy(dev_b, b, 8 * sizeof(unsigned long), cudaMemcpyHostToDevice));
     
     test_lt<<<1, 1>>>(dev_a, dev_b, dev_result);
     cudaDeviceSynchronize();
-    checkCudaErrors(cudaMemcpy(&result, dev_result, sizeof(int), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(result, dev_result, sizeof(int), cudaMemcpyDeviceToHost));
     cudaDeviceReset();
 
     return result[0];

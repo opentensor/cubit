@@ -1,6 +1,7 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+extern bool runTestSealMeetsDifficulty(unsigned char* seal, unsigned long* limit);
 extern int runTestLessThan(unsigned long* a, unsigned long* b);
 extern void runTestCreatePreSeal(unsigned char* pre_seal, uint64 nonce, unsigned char* block_bytes);
 extern void runTestCreateNonceBytes(unsigned long long nonce, unsigned char* nonce_bytes);

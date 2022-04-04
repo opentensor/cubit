@@ -17,6 +17,7 @@ cdef extern from "src/uint256.cuh":
     ctypedef unsigned long uint256[8]
 
 cdef extern from "src/main.hh":
+    int runTestSealMeetsDifficulty(unsigned char* seal, unsigned long* limit);
     int runTestLessThan(uint256 a, uint256 b);
     void runTestCreatePreSeal(unsigned char* pre_seal, uint64 nonce, unsigned char* block_bytes);
     void runTestCreateNonceBytes(uint64 nonce, unsigned char* nonce_bytes);
@@ -76,15 +77,9 @@ cpdef bytes run_test_create_nonce_bytes(uint64 nonce):
         PyMem_Free(nonce_bytes)
 
 cpdef int run_test_less_than(const unsigned char[:] a, const unsigned char[:] b):
-    cdef unsigned long* a_ = <unsigned long*> PyMem_Malloc(
-        8 * sizeof(unsigned long))
-
     cdef unsigned char* a_char = <unsigned char*> PyMem_Malloc(
         32 * sizeof(unsigned char))
-
-    cdef unsigned long* b_ = <unsigned long*> PyMem_Malloc(
-        8 * sizeof(unsigned long))
-
+        
     cdef unsigned char* b_char = <unsigned char*> PyMem_Malloc(
         32 * sizeof(unsigned char))
 
@@ -93,23 +88,35 @@ cpdef int run_test_less_than(const unsigned char[:] a, const unsigned char[:] b)
     for i in range(32):
         a_char[i] = a[i]
 
-    # Note sure if this will work
-    memcpy(a_, a_char , 8 * sizeof(unsigned long))
-
     for i in range(32):
         b_char[i] = b[i]
 
-    # Note sure if this will work
-    memcpy(b_, b_char , 8 * sizeof(unsigned long))
-
     try:
-        result = runTestLessThan(a_, b_)
+        result = runTestLessThan(<unsigned long*>a_char, <unsigned long*>b_char)
         return result
     finally:
-        PyMem_Free(a_)
-        PyMem_Free(b_)
         PyMem_Free(a_char)
         PyMem_Free(b_char)
+
+cpdef int run_test_seal_meets_difficulty(const unsigned char[:] seal, const unsigned char[:] upper):
+    cdef unsigned char* limit_char = <unsigned char*> PyMem_Malloc(
+        32 * sizeof(unsigned char))
+
+    cdef unsigned char* seal_ = <unsigned char*> PyMem_Malloc(
+        32 * sizeof(unsigned char))
+
+    cdef int i
+    for i in range(32):
+        limit_char[i] = upper[i]
+
+    for i in range(32):
+        seal_[i] = seal[i]
+
+    try:
+        return runTestSealMeetsDifficulty(seal_, <unsigned long*>limit_char)
+    finally:
+        PyMem_Free(seal_)
+        PyMem_Free(limit_char)
 
 cpdef bytearray run_test_create_pre_seal(uint64 nonce, unsigned char* block_bytes):
     cdef unsigned char* preseal_bytes = <unsigned char*> PyMem_Malloc(
@@ -136,9 +143,6 @@ cpdef tuple solve_cuda(int blockSize, list nonce_start, uint64 update_interval, 
     cdef unsigned char* seal_ = <unsigned char*> PyMem_Malloc(
         64 * sizeof(unsigned char))
 
-    cdef unsigned long* limit_ = <unsigned long*> PyMem_Malloc(
-        8 * sizeof(unsigned long))
-
     cdef unsigned char* limit_char = <unsigned char*> PyMem_Malloc(
         32 * sizeof(unsigned char))
 
@@ -153,16 +157,12 @@ cpdef tuple solve_cuda(int blockSize, list nonce_start, uint64 update_interval, 
     for i in range(32):
         limit_char[i] = limit[i]
 
-    # Note sure if this will work
-    memcpy(limit_, limit_char , 8 * sizeof(unsigned long))
-
     try:
-        solution = solve_cuda_c(blockSize, seal_, nonce_start_c, update_interval, n_nonces, limit_, block_bytes_c);
+        solution = solve_cuda_c(blockSize, seal_, nonce_start_c, update_interval, n_nonces, <unsigned long*>limit_char, block_bytes_c);
         solution_128 = solution
         return (solution_128 - 1, bytearray(seal_[:32]))
     finally:
         PyMem_Free(nonce_start_c)    
         PyMem_Free(block_bytes_c)
         PyMem_Free(seal_)
-        PyMem_Free(limit_)
         PyMem_Free(limit_char)
