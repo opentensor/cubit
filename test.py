@@ -88,15 +88,15 @@ for _ in range(0, 100):
         break
 else:
     print("Test lt: PASS")
-"""
+
 
 # Test seal meets difficulty
-diff_ = 20 * 10**9
+diff_ = 48 * 10**9
 upper_ = int(limit // difficulty)
 
 upper_bytes_ = upper.to_bytes(32, byteorder='little', signed=False)
 
-nonce = 200000
+nonce = 0
 nonce_bytes = binascii.hexlify(nonce.to_bytes(8, 'little'))
 pre_seal = nonce_bytes + block_bytes
 seal = hashlib.sha256( bytearray(hex_bytes_to_u8_list(pre_seal)) ).digest()
@@ -104,8 +104,8 @@ result = run_test_seal_meets_difficulty(seal, upper_bytes_)
 result_2 = seal_meets_difficulty(seal, diff_)
 print("Test seal meets difficulty: ", result == result_2)
 print("\n")
-
 """
+
 # Test a solve
 
 solution = -1
@@ -122,7 +122,7 @@ seal_1 = hashlib.sha256( bytearray(hex_bytes_to_u8_list(nonce_bytes + block_byte
 print(solution, seal)
 print(solution, seal_1)
 print(seal_meets_difficulty(seal_1, difficulty))
-"""
-
+check = run_test_seal_meets_difficulty(seal, upper_bytes)
+print(check)
 
 

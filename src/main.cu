@@ -42,22 +42,14 @@ __device__ void sha256(unsigned char* data, unsigned long size, unsigned char* d
 __device__ bool seal_meets_difficulty(BYTE* seal, uint256 limit) {
     // Need a 256 bit integer to store the seal number
     BYTE seal_[32];
-    uint256 seal_number;
 
     // Reverse 32 byte array to get little-endian
     for (int i = 0; i < 32; i++) {
         seal_[i] = seal[31-i];
     }
 
-    // Convert the seal_number to a uint256
-    // seal_ is little endian
-    for (int i = 0; i < 32; i += 4) {
-        seal_number[i/4] =  (uint32_t)seal_[i] | (uint32_t)seal_[i+1] << 8
-        | (uint32_t)seal_[i+2] << 16 | (uint32_t)seal_[i+3] << 24;
-    }
-
     // Check if the seal number is less than the limit
-    int under_limit = lt(seal_number, limit);
+    int under_limit = lt((unsigned long*)seal_, limit);
     return under_limit == -1;
 }
 
@@ -127,15 +119,19 @@ __global__ void solve(BYTE** seal, uint64* solution, uint64* nonce_start, uint64
                     create_seal_hash(seal_, block_bytes, j);
                     
                     if (seal_meets_difficulty(seal_, limit)) {
-                        printf("Found solution: %llu\n", j);
                         solution[i] = j + 1;
 
                         // Copy seal to shared memory
                         for (int k = 0; k < 64; k++) {
                             seal[i][k] = seal_[k];
                             // print the seal
+                            //if (k == 32) {
+                            //    printf("i = 32;\n");
+                            //}
                             //printf("%02x ", seal_[k]);
+                        
                         }
+                        //printf("\n");
                         found = true;
                         return;
                     }
