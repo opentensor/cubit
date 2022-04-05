@@ -108,18 +108,19 @@ __global__ void solve(BYTE** seals, uint64* solution, uint64 nonce_start, uint64
                 if (found) {
                     break;
                 }
+                BYTE seal[64];
 
                 // Make the seal all 0xff
                 for (int j = 0; j < 64; j++) {
-                    seals[i][j] = 0xff;
+                    seal[i] = 0xff;
                 }
 
                 uint64 nonce = nonce_start + i * update_interval;
                 for (
                     uint64 j = nonce; j < nonce + update_interval; j++) {
-                    create_seal_hash(seals[i], block_bytes, j);
+                    create_seal_hash(seal, block_bytes, j);
                     
-                    if (seal_meets_difficulty(seals[i], limit)) {
+                    if (seal_meets_difficulty(seal, limit)) {
                         solution[i] = j + 1;
 
                         // Copy seal to shared memory
@@ -309,7 +310,6 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update
     uint64 solution = 0;
     unsigned long* limit_d;
     unsigned long* limit_h;
-    BYTE** seals_d;
 
     // Allocate pinned memory on host. This should speed up the data transfer back.
     checkCudaErrors(cudaMallocHost((void**)&solutions, blockSize * 8 * sizeof(unsigned long)));
@@ -326,11 +326,6 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update
     checkCudaErrors(cudaMallocManaged(&block_bytes_d, 64 * sizeof(BYTE)));
     // Malloc space for limit in device memory.
     checkCudaErrors(cudaMallocManaged(&limit_d, 8 * sizeof(unsigned long)));
-    // Malloc space for blockSize seals in device memory.
-    checkCudaErrors(cudaMallocManaged(&seals_d, 1 * sizeof(BYTE*)));
-    for (int i = 0; i < blockSize; i++) {
-        checkCudaErrors(cudaMallocManaged(&seals_d[i], 64 * sizeof(BYTE)));
-    }
 
 	// Copy data to device memory
 	// Put block bytes in device memory. Should be 32 bytes.
@@ -344,7 +339,7 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update
     checkCudaErrors(cudaMemset(solution_d, 0, sizeof(uint64)));
 
     // Running Solve on GPU
-	runSolve(blockSize, seals_d, solution_d, nonce_start, update_interval, limit_d, block_bytes_d);
+	runSolve(blockSize, NULL, solution_d, nonce_start, update_interval, limit_d, block_bytes_d);
 
 	cudaDeviceSynchronize();
     
@@ -363,11 +358,6 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update
     checkCudaErrors(cudaFree(solution_d));
     checkCudaErrors(cudaFree(block_bytes_d));
     checkCudaErrors(cudaFree(limit_d));
-    for (int i = 0; i < blockSize; i++) {
-        checkCudaErrors(cudaFree(seals_d[i]));
-    }
-    checkCudaErrors(cudaFreeHost(seals_d));
-
 
     checkCudaErrors(cudaFreeHost(solutions));
     checkCudaErrors(cudaFreeHost(block_bytes_h));
