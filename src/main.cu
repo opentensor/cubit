@@ -100,6 +100,7 @@ __device__ void create_seal_hash(BYTE* seal, BYTE* block_hash, uint64 nonce) {
 __global__ void solve(BYTE** seals, uint64* solution, uint64 nonce_start, uint64 update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes) {
         __shared__ bool found;
         found = false;
+        BYTE seal[64];
         
         for (unsigned int i = blockIdx.x * blockDim.x + threadIdx.x; 
                 i < n_nonces; 
@@ -108,11 +109,10 @@ __global__ void solve(BYTE** seals, uint64* solution, uint64 nonce_start, uint64
                 if (found) {
                     break;
                 }
-                BYTE seal[64];
 
                 // Make the seal all 0xff
                 for (int j = 0; j < 64; j++) {
-                    seal[i] = 0xff;
+                    seal[j] = 0xff;
                 }
 
                 uint64 nonce = nonce_start + i * update_interval;
@@ -362,6 +362,8 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update
     checkCudaErrors(cudaFreeHost(solutions));
     checkCudaErrors(cudaFreeHost(block_bytes_h));
     checkCudaErrors(cudaFreeHost(limit_h));	
+
+    cudaDeviceReset();
     return solution;
 }
 
