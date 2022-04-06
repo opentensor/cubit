@@ -97,6 +97,7 @@ __device__ void create_seal_hash(BYTE* seal, BYTE* block_hash, uint64 nonce) {
     sha256(pre_seal, sizeof(BYTE) * 40, seal);     
 }
 
+// TODO: Use CUDA streams and events to dispatch new blocks and recieve solutions
 __global__ void solve(BYTE** seals, uint64* solution, uint64 nonce_start, uint64 update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes) {
         __shared__ bool found;
         found = false;
