@@ -17,8 +17,7 @@
 
 import os
 from os.path import join as pjoin
-from setuptools import setup
-from distutils.extension import Extension
+from setuptools import setup, Extension
 from Cython.Distutils import build_ext
 import numpy
 
@@ -133,7 +132,7 @@ ext = Extension('bittensor_register_cuda',
             extra_compile_args={
                 'gcc': [],
                 'nvcc': [
-                '-arch=sm_70', '--ptxas-options=-v', '-c',
+                '-arch=sm_61', '--ptxas-options=-v', '-c',
                 '--compiler-options', "'-fPIC'"
                 ]
             },
@@ -144,7 +143,7 @@ ext = Extension('bittensor_register_cuda',
 setup(name = 'bittensor_register_cuda',
       # Random metadata. there's more you can supply
       author = 'Cameron Fairchild',
-      version = '0.1',
+      version = '0.2',
 
       ext_modules = [ext],
 

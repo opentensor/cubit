@@ -3,3 +3,5 @@
 /build
 /cuda_solve.cpp
 /*.egg-info
+/.pytest_cache
+/__pycache__

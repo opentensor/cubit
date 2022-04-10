@@ -1,1 +1,3 @@
 Cython==0.29.14 
+pytest>=6.2.4
+git+https://github.com/opentensor/bittensor@master#egg=bittensor
