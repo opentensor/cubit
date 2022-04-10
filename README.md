@@ -6,4 +6,3 @@ Allows for CUDA registration using python for bittensor.
 
 https://github.com/Horkyze/CudaSHA256/  
 https://github.com/rmcgibbo/npcuda-example/  
-https://github.com/bitcoin/bitcoin/
