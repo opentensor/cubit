@@ -1,3 +1,20 @@
+# The MIT License (MIT)
+# Copyright © 2022 Cameron Fairchild
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
+# documentation files (the “Software”), to deal in the Software without restriction, including without limitation 
+# the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+# and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of 
+# the Software.
+
+# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+# THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION 
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
+# DEALINGS IN THE SOFTWARE.
+
 from typing import List
 import unittest
 import random
@@ -134,7 +151,7 @@ class TestCli( unittest.TestCase ):
             start_nonce += interval*4
             # int blockSize, uint64 nonce_start, uint64 update_interval, const unsigned char[:] limit,
             # const unsigned char[:] block_bytes
-            solution = solve_cuda(4, start_nonce, interval, self.upper_bytes, self.block_bytes)
+            solution = solve_cuda(4, start_nonce, interval, self.upper_bytes, self.block_bytes, self.dev_id)
         assert solution != -1
         seal = hashlib.sha256( bytearray(self.hex_bytes_to_u8_list(self.get_nonce_bytes(solution) + self.block_bytes)) ).digest()
         assert self.seal_meets_difficulty(seal, self.difficulty)

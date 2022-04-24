@@ -22,6 +22,6 @@ Testing uses unittest as there is an issue with pytest and Cython
 - Perhaps use events/streams
 
 ## Acknowledgments
-
-https://github.com/Horkyze/CudaSHA256/  
+  
 https://github.com/rmcgibbo/npcuda-example/  
+https://github.com/mochimodev/cuda-hashing-algos/  

@@ -1,9 +1,30 @@
+/*
+ * The MIT License (MIT)
+ * Copyright © 2022 Cameron Fairchild
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
+ * documentation files (the “Software”), to deal in the Software without restriction, including without limitation 
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of 
+ * the Software.
+
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+ * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION 
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
+ * DEALINGS IN THE SOFTWARE.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <cuda.h>
-#include "sha256.cuh"
+#include "sha256/sha256.cu"
+#include "keccak/keccak.cu"
+#include "types.hh"
 #include "uint256.cuh"
 #include "uint64.cuh"
 #include "main.hh"
@@ -29,10 +50,11 @@ __device__ int lt(uint256 a, uint256 b) {
 }
 
 __device__ void sha256(unsigned char* data, unsigned long size, unsigned char* digest) {
-    SHA256_CTX ctx;
-    sha256_init(&ctx);
-    sha256_update(&ctx, data, size);
-    sha256_final(&ctx, digest);
+    CUDA_SHA256_CTX ctx;
+    cuda_sha256_init(&ctx);
+    cuda_sha256_update(&ctx, data, size);
+    cuda_sha256_final(&ctx, digest);
+}
 }
 
 __device__ bool seal_meets_difficulty(BYTE* seal, uint256 limit) {
@@ -299,7 +321,7 @@ int runTestLessThan(uint256 a, uint256 b) {
     return result[0];
 }
 
-uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update_interval, uint256 limit, BYTE* block_bytes) {
+uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update_interval, uint256 limit, BYTE* block_bytes, int dev_id) {
 	unsigned char* block_bytes_d;
     unsigned char* block_bytes_h;
     uint64* solution_d;
@@ -307,6 +329,8 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update
     uint64 solution = 0;
     unsigned long* limit_d;
     unsigned long* limit_h;
+
+    checkCudaErrors(cudaSetDevice(dev_id));
 
     // Allocate pinned memory on host. This should speed up the data transfer back.
     checkCudaErrors(cudaMallocHost((void**)&solutions, blockSize * 8 * sizeof(unsigned long)));

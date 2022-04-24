@@ -17,17 +17,19 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef MAIN_H
-#define MAIN_H
+#ifndef TYPES_H
+#define TYPES_H
 
-extern void reset_cuda_c();
-extern bool runTestSealMeetsDifficulty(unsigned char* seal, unsigned long* limit);
-extern int runTestLessThan(unsigned long* a, unsigned long* b);
-extern void runTestCreatePreSeal(unsigned char* pre_seal, uint64 nonce, unsigned char* block_bytes);
-extern void runTestCreateNonceBytes(unsigned long long nonce, unsigned char* nonce_bytes);
-extern void runTestPreSealHash(unsigned char* seal, unsigned char* preseal_bytes);
-extern void runTestSealHash(unsigned char* seal, unsigned char* block_hash, unsigned long long nonce);
-extern void runTest(unsigned char* data, unsigned long size, unsigned char* digest);
-extern unsigned long long solve_cuda_c(int blockSize, unsigned char* seal, unsigned long long nonce_start, unsigned long long update_interval, unsigned long* limit, unsigned char* block_bytes);
+typedef unsigned char BYTE;             // 8-bit byte
+typedef unsigned int  WORD;             // 32-bit word, change to "long" for 16-bit machines
+typedef unsigned long long LONG;
 
-#endif // MAIN_H
+#define checkCudaErrors(x) \
+{ \
+    cudaError_t err = cudaGetLastError(); \
+    if (err != cudaSuccess) {\
+        printf("CUDA Error Occurred %s:%d: '%s'\n",__FILE__,__LINE__,cudaGetErrorString(err)); \
+    } \
+}
+
+#endif   // TYPES_H
