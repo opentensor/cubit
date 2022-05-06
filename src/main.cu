@@ -39,6 +39,7 @@ __device__ int lt(uint256 a, uint256 b) {
     BYTE* a_ = (BYTE*)a;
     BYTE* b_ = (BYTE*)b;
 
+    // Checks in reverse order of the bytes
     for (int i = 32 - 1; i >= 0; i--) {
         if (a_[i] < b_[i]) {
             return -1;
@@ -55,6 +56,15 @@ __device__ void sha256(unsigned char* data, unsigned long size, unsigned char* d
     cuda_sha256_update(&ctx, data, size);
     cuda_sha256_final(&ctx, digest);
 }
+
+__device__ void keccak256(unsigned char* data, unsigned long size, unsigned char* digest) {
+    const WORD n_outbit = 256; // 256-bit
+
+    CUDA_KECCAK_CTX ctx;
+
+    cuda_keccak_init(&ctx, n_outbit);
+    cuda_keccak_update(&ctx, data, size);
+    cuda_keccak_final(&ctx, digest);
 }
 
 __device__ bool seal_meets_difficulty(BYTE* seal, uint256 limit) {
@@ -106,13 +116,26 @@ __device__ void create_pre_seal(BYTE* pre_seal, BYTE* block_hash_bytes, uint64 n
     }
 }
 
-__device__ void create_seal_hash(BYTE* seal, BYTE* block_hash, uint64 nonce) {
-    BYTE pre_seal[40];    
+__device__ void create_seal_hash_from_pre_seal(BYTE* pre_seal, BYTE* seal_hash) {
+    BYTE seal_sha256[64];
 
-    create_pre_seal(pre_seal, block_hash, nonce);
-    
     // Hash the pre_seal and store in seal;
-    sha256(pre_seal, sizeof(BYTE) * 40, seal);     
+    sha256(pre_seal, sizeof(BYTE) * 40, seal_sha256);
+
+    // Copy the first 32 bytes of the hash into the seal
+    for (int i = 0; i < 32; i++) {
+        seal_hash[i] = seal_sha256[i];
+    }
+
+    // Hash the seal in keccak
+    keccak256(seal_hash, sizeof(BYTE) * 32, seal_hash); 
+}
+
+__device__ void create_seal_hash(BYTE* seal, BYTE* block_hash, uint64 nonce) {
+    BYTE pre_seal[40];  
+    create_pre_seal(pre_seal, block_hash, nonce);
+    // Hash the pre_seal and store in seal;
+    create_seal_hash_from_pre_seal(pre_seal, seal); 
 }
 
 // TODO: Use CUDA streams and events to dispatch new blocks and recieve solutions
@@ -141,27 +164,24 @@ __global__ void solve(BYTE** seals, uint64* solution, uint64 nonce_start, uint64
                     
                     if (seal_meets_difficulty(seal, limit)) {
                         solution[i] = j + 1;
-
-                        // Copy seal to shared memory
-                       // for (int k = 0; k < 64; k++) {
-                         //   seal[i][k] = seal_[k];
-                            // print the seal
-                            //if (k == 32) {
-                            //    printf("i = 32;\n");
-                            //}
-                            //printf("%02x ", seal_[k]);
-                        
-                        //}
-                        //printf("\n");
+                        if (found) {
+                            printf("also found nonce %llu \n", j);
+                            return;
+                        }
                         found = true;
-                        break;
+                        for (int k = 0; k < 32; k++) {
+                            // print the seal
+                            printf("%02x ", seal[k]);
+                        }
+                        printf("found nonce %llu \n", j);
+                        return;
                     }
                 }
             }            
 }
 
 __global__ void test_lt(uint256 a, uint256 b, int* result) {
-    result[0] = lt(a, b);
+    result[0] = lt(a, b);;
 }
 
 __global__ void test_create_nonce_bytes(uint64 nonce, BYTE* nonce_bytes) {
@@ -176,34 +196,34 @@ __global__ void test_sha256(BYTE* data, int size, BYTE* digest) {
     sha256(data, size, digest);
 }
 
+__global__ void test_keccak256(BYTE* data, int size, BYTE* digest) {
+    keccak256(data, size, digest);
+}
+
 __global__ void test_seal_hash(BYTE* seal, BYTE* block_hash, uint64 nonce) {
     create_seal_hash(seal, block_hash, nonce);
 }
 
 __global__ void test_preseal_hash(BYTE* seal, BYTE* preseal_bytes) {
-    sha256(preseal_bytes, sizeof(BYTE) * 40, seal);
+    create_seal_hash_from_pre_seal(preseal_bytes, seal);
 }
 
 __global__ void test_seal_meets_difficulty(BYTE* seal, uint256 limit, bool* result) {
-    seal_meets_difficulty(seal, limit);
-}
-
-void pre_sha256() {
-	// copy symbols
-	checkCudaErrors(cudaMemcpyToSymbol(dev_k, host_k, sizeof(host_k), 0, cudaMemcpyHostToDevice));
+    *result = seal_meets_difficulty(seal, limit);
 }
 
 void runSolve(int blockSize, BYTE** seals, uint64* solution, uint64 nonce_start, uint64 update_interval, uint256 limit, BYTE* block_bytes) {
 	int numBlocks = (blockSize + blockSize - 1) / blockSize;
+
 	solve <<< numBlocks, blockSize >>> (seals, solution, nonce_start, update_interval, blockSize, limit, block_bytes);
 }
 
 bool runTestSealMeetsDifficulty(BYTE* seal, uint256 limit) {
-    BYTE* dev_seal;
-    unsigned long* dev_limit;
-    bool* dev_result;
+    BYTE* dev_seal = NULL;
+    unsigned long* dev_limit = NULL;
+    bool* dev_result = NULL;
 
-    bool result;
+    bool result = false;
 
     checkCudaErrors(cudaMallocManaged(&dev_seal, sizeof(BYTE) * 32));
     checkCudaErrors(cudaMallocManaged(&dev_limit, 8 * sizeof(unsigned long)));
@@ -211,94 +231,112 @@ bool runTestSealMeetsDifficulty(BYTE* seal, uint256 limit) {
 
     checkCudaErrors(cudaMemcpy(dev_seal, seal, sizeof(BYTE) * 32, cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMemcpy(dev_limit, limit, 8 * sizeof(unsigned long), cudaMemcpyHostToDevice));
-    
-    test_seal_meets_difficulty <<< 1, 1 >>> (seal, limit, dev_result);
+    checkCudaErrors(cudaDeviceSynchronize());
+    test_seal_meets_difficulty <<< 1, 1 >>> (dev_seal, dev_limit, dev_result);
 
-    cudaDeviceSynchronize();
+    checkCudaErrors(cudaDeviceSynchronize());
     checkCudaErrors(cudaMemcpy(&result, dev_result, sizeof(bool), cudaMemcpyDeviceToHost));
-    cudaDeviceReset();
 
     return result;
 }
 
 void runTestCreateNonceBytes(uint64 nonce, BYTE* nonce_bytes) {
-    BYTE* dev_nonce_bytes;
+    BYTE* dev_nonce_bytes = NULL;
     checkCudaErrors(cudaMallocManaged(&dev_nonce_bytes, sizeof(BYTE) * 8));
 
-    pre_sha256();
-
+    checkCudaErrors(cudaDeviceSynchronize());
     test_create_nonce_bytes<<<1, 1>>>(nonce, dev_nonce_bytes);
 
-    cudaDeviceSynchronize();
+    checkCudaErrors(cudaDeviceSynchronize());
     checkCudaErrors(cudaMemcpy(nonce_bytes, dev_nonce_bytes, sizeof(BYTE) * 8, cudaMemcpyDeviceToHost));
-    cudaDeviceReset();
+    checkCudaErrors(cudaDeviceSynchronize());
 }
 
 void runTestCreatePreSeal(unsigned char* pre_seal, uint64 nonce, unsigned char* block_bytes) {
     // Test sha256
-    BYTE* dev_pre_seal;
+    BYTE* dev_pre_seal = NULL;
     checkCudaErrors(cudaMallocManaged(&dev_pre_seal, sizeof(BYTE) * 40));
 
     // malloc block_bytes
-    BYTE* dev_block_bytes;
+    BYTE* dev_block_bytes = NULL;
     checkCudaErrors(cudaMallocManaged(&dev_block_bytes, 64 * sizeof(BYTE)));
     checkCudaErrors(cudaMemcpy(dev_block_bytes, block_bytes, 64 *  sizeof(BYTE), cudaMemcpyHostToDevice));
 
-    pre_sha256();
-
+    
+    checkCudaErrors(cudaDeviceSynchronize());
     test_create_preseal<<<1, 1>>>(dev_pre_seal, nonce, dev_block_bytes);
 
-    cudaDeviceSynchronize();
+    checkCudaErrors(cudaDeviceSynchronize());
     checkCudaErrors(cudaMemcpy(pre_seal, dev_pre_seal, sizeof(BYTE) * 40, cudaMemcpyDeviceToHost));
-    cudaDeviceReset();
+    checkCudaErrors(cudaDeviceSynchronize());
 }
 
 void runTest(BYTE* data, unsigned long size, BYTE* digest) {
     // Test sha256
-    BYTE* dev_data;
-    BYTE* dev_digest;
+    BYTE* dev_data = NULL;
+    BYTE* dev_digest = NULL;
     checkCudaErrors(cudaMallocManaged(&dev_data, size));
     checkCudaErrors(cudaMallocManaged(&dev_digest, sizeof(BYTE) * 64));
     // Copy data to device
     checkCudaErrors(cudaMemcpy(dev_data, data, size, cudaMemcpyHostToDevice));
 
-    pre_sha256();
+    checkCudaErrors(cudaDeviceSynchronize());
     test_sha256<<<1, 1>>>(dev_data, size, dev_digest);
-    cudaDeviceSynchronize();
+
+    checkCudaErrors(cudaDeviceSynchronize());
     checkCudaErrors(cudaMemcpy(digest, dev_digest, 64, cudaMemcpyDeviceToHost));
-    cudaDeviceReset();
+    checkCudaErrors(cudaDeviceSynchronize());
+}
+
+void runTestKeccak(BYTE* data, unsigned long size, BYTE* digest) {
+    // Test sha256
+    BYTE* dev_data = NULL;
+    BYTE* dev_digest = NULL;
+    checkCudaErrors(cudaMallocManaged(&dev_data, size));
+    checkCudaErrors(cudaMallocManaged(&dev_digest, sizeof(BYTE) * 64));
+    // Copy data to device
+    checkCudaErrors(cudaMemcpy(dev_data, data, size, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaDeviceSynchronize());
+    test_keccak256<<<1, 1>>>(dev_data, size, dev_digest);
+
+    checkCudaErrors(cudaDeviceSynchronize());
+    checkCudaErrors(cudaMemcpy(digest, dev_digest, 64, cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaDeviceSynchronize());
 }
 
 void runTestSealHash(BYTE* seal, BYTE* block_hash, uint64 nonce) {
-    BYTE* dev_seal;
-    BYTE* dev_block_hash;
+    BYTE* dev_seal = NULL;
+    BYTE* dev_block_hash = NULL;
     checkCudaErrors(cudaMallocManaged(&dev_seal, 64));
     checkCudaErrors(cudaMallocManaged(&dev_block_hash, 64));
     // Copy data to device
     checkCudaErrors(cudaMemcpy(dev_block_hash, block_hash, 64, cudaMemcpyHostToDevice));
 
-    pre_sha256();
+    
 
+    checkCudaErrors(cudaDeviceSynchronize());
     test_seal_hash<<<1, 1>>>(dev_seal, dev_block_hash, nonce);
-    cudaDeviceSynchronize();
+    checkCudaErrors(cudaDeviceSynchronize());
     checkCudaErrors(cudaMemcpy(seal, dev_seal, 64, cudaMemcpyDeviceToHost));
-    cudaDeviceReset();
+    checkCudaErrors(cudaDeviceSynchronize());
 }
 
 void runTestPreSealHash(unsigned char* seal, unsigned char* preseal_bytes) {
-    BYTE* dev_seal;
-    BYTE* dev_preseal_bytes;
+    BYTE* dev_seal = NULL;
+    BYTE* dev_preseal_bytes = NULL;
     checkCudaErrors(cudaMallocManaged(&dev_seal, 64));
     checkCudaErrors(cudaMallocManaged(&dev_preseal_bytes, 40));
     // Copy data to device
     checkCudaErrors(cudaMemcpy(dev_preseal_bytes, preseal_bytes, 40, cudaMemcpyHostToDevice));
 
-    pre_sha256();
+    
 
+    checkCudaErrors(cudaDeviceSynchronize());
     test_preseal_hash<<<1, 1>>>(dev_seal, dev_preseal_bytes);
-    cudaDeviceSynchronize();
+
+    checkCudaErrors(cudaDeviceSynchronize());
     checkCudaErrors(cudaMemcpy(seal, dev_seal, 64, cudaMemcpyDeviceToHost));
-    cudaDeviceReset();
+    checkCudaErrors(cudaDeviceSynchronize());
 }
 
 int runTestLessThan(uint256 a, uint256 b) {
@@ -312,11 +350,12 @@ int runTestLessThan(uint256 a, uint256 b) {
     // Copy data to device
     checkCudaErrors(cudaMemcpy(dev_a, a, 8 * sizeof(unsigned long), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMemcpy(dev_b, b, 8 * sizeof(unsigned long), cudaMemcpyHostToDevice));
-    
+
+    checkCudaErrors(cudaDeviceSynchronize());
     test_lt<<<1, 1>>>(dev_a, dev_b, dev_result);
-    cudaDeviceSynchronize();
+    checkCudaErrors(cudaDeviceSynchronize());
     checkCudaErrors(cudaMemcpy(result, dev_result, sizeof(int), cudaMemcpyDeviceToHost));
-    cudaDeviceReset();
+    checkCudaErrors(cudaDeviceSynchronize());
 
     return result[0];
 }
@@ -354,15 +393,15 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update
     // Put limit in device memory.
     checkCudaErrors(cudaMemcpy(limit_d, limit_h, 8 * sizeof(unsigned long), cudaMemcpyHostToDevice));
 
-	pre_sha256();
-
     // Zero out solution
     checkCudaErrors(cudaMemset(solution_d, 0, sizeof(uint64)));
+
+    checkCudaErrors(cudaDeviceSynchronize());
 
     // Running Solve on GPU
 	runSolve(blockSize, NULL, solution_d, nonce_start, update_interval, limit_d, block_bytes_d);
 
-	cudaDeviceSynchronize();
+	checkCudaErrors(cudaDeviceSynchronize());
     
     // Copy data back to host memory
     checkCudaErrors(cudaMemcpy(solutions, solution_d, blockSize * sizeof(uint64), cudaMemcpyDeviceToHost));
@@ -374,7 +413,6 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update
         }
     }
 
-    
     // Free memory
     checkCudaErrors(cudaFree(solution_d));
     checkCudaErrors(cudaFree(block_bytes_d));
@@ -384,11 +422,11 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update
     checkCudaErrors(cudaFreeHost(block_bytes_h));
     checkCudaErrors(cudaFreeHost(limit_h));	
 
-    cudaDeviceReset();
+    checkCudaErrors(cudaDeviceSynchronize());
+
     return solution;
 }
 
-
 void reset_cuda_c() {
-    cudaDeviceReset();
+    checkCudaErrors(cudaDeviceReset());
 }

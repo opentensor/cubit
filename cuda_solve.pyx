@@ -21,10 +21,9 @@
 from cpython cimport array
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
 from libc.string cimport memcpy
-from libc.stdio cimport printf
 import array
 
-cdef extern from "src/uint128.hh":
+cdef extern from "src/int128.hh":
     ctypedef int int128
 
 cdef extern from "src/uint64.cuh":
@@ -38,11 +37,12 @@ cdef extern from "src/main.hh":
     int runTestSealMeetsDifficulty(unsigned char* seal, unsigned long* limit);
     int runTestLessThan(uint256 a, uint256 b);
     void runTestCreatePreSeal(unsigned char* pre_seal, uint64 nonce, unsigned char* block_bytes);
-    void runTestCreateNonceBytes(uint64 nonce, unsigned char* nonce_bytes);
+    void runTestCreateNonceBytes(unsigned long long nonce, unsigned char* nonce_bytes);
     void runTestSealHash(unsigned char* seal, unsigned char* block_hash, uint64 nonce);
     void runTestPreSealHash(unsigned char* seal, unsigned char* preseal_bytes);
     void runTest(unsigned char* data, unsigned long size, unsigned char* digest);
-    uint64 solve_cuda_c(int blockSize, unsigned char* seal, uint64 nonce_start, uint64 update_interval, uint256 limit, unsigned char* block_bytes);
+    void runTestKeccak(unsigned char* data, unsigned long size, unsigned char* digest);
+    uint64 solve_cuda_c(int blockSize, unsigned char* seal, uint64 nonce_start, uint64 update_interval, uint256 limit, unsigned char* block_bytes, int dev_id);
 
 cpdef bytes run_test(unsigned char* data, unsigned long length): 
     cdef unsigned char* digest_ = <unsigned char*> PyMem_Malloc(
@@ -52,6 +52,19 @@ cpdef bytes run_test(unsigned char* data, unsigned long length):
 
     try:
         runTest(data, size, digest_)
+
+        return digest_[:32]
+    finally:
+        PyMem_Free(digest_)
+
+cpdef bytes run_test_keccak(unsigned char* data, unsigned int length): 
+    cdef unsigned char* digest_ = <unsigned char*> PyMem_Malloc(
+        64 * sizeof(unsigned char))
+
+    cdef unsigned long size = sizeof(unsigned char) * length
+
+    try:
+        runTestKeccak(data, size, digest_)
 
         return digest_[:32]
     finally:
@@ -148,7 +161,7 @@ cpdef bytearray run_test_create_pre_seal(uint64 nonce, unsigned char* block_byte
     finally:
         PyMem_Free(preseal_bytes)
 
-cpdef int128 solve_cuda(int blockSize, uint64 nonce_start, uint64 update_interval, const unsigned char[:] limit, const unsigned char[:] block_bytes):
+cpdef int128 solve_cuda(int blockSize, uint64 nonce_start, uint64 update_interval, const unsigned char[:] limit, const unsigned char[:] block_bytes, const int dev_id):
     cdef uint64 solution
     cdef int128 solution_128
 

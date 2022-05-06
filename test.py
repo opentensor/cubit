@@ -15,19 +15,25 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
 # DEALINGS IN THE SOFTWARE.
 
-from typing import List
-import unittest
-import random
-import math
-import hashlib
 import binascii
+import hashlib
+import math
+import random
+import unittest
+from typing import List
 
 import bittensor as bt
-from numpy import byte
+import torch
+from Crypto.Hash import keccak
 
-from bittensor_register_cuda import solve_cuda, run_test, run_test_seal_hash, \
-    run_test_preseal_hash, run_test_create_nonce_bytes, run_test_create_pre_seal, \
-        run_test_less_than, run_test_seal_meets_difficulty, reset_cuda
+from bittensor_register_cuda import (reset_cuda, run_test,
+                                     run_test_create_nonce_bytes,
+                                     run_test_create_pre_seal, run_test_keccak,
+                                     run_test_less_than, run_test_preseal_hash,
+                                     run_test_seal_hash,
+                                     run_test_seal_meets_difficulty,
+                                     solve_cuda)
+
 
 class TestCli( unittest.TestCase ):
     st: bt.Subtensor
@@ -38,20 +44,25 @@ class TestCli( unittest.TestCase ):
     upper: int
     upper_bytes: bytes
     block_bytes: bytes
+    dev_id: int
 
     def setUp( self ) -> None:
+        if not torch.cuda.is_available():
+            print("No GPU available")
+            self.fail("No GPU available")
+
+        self.dev_id = 0 # By default, use the first GPU
         self.st = bt.subtensor(network="endpoint",chain_endpoint="subtensor.fairchild.dev:9944")
         self.bn = self.st.get_current_block()
         self.bh = self.st.substrate.get_block_hash(self.bn)
         self.difficulty = 100000 #st.difficulty
         self.limit = int(math.pow(2,256)) - 1
-        self.upper = int(self.limit // self.difficulty)
+        self.upper = int(self.limit // self.difficulty) - 1
         self.upper_bytes = self.upper.to_bytes(32, byteorder='little', signed=False)
         self.block_bytes = self.bh.encode('utf-8')[2:]
 
     def tearDown(self) -> None:
         reset_cuda() # Reset the CUDA device
-        return super().tearDown()
 
     @staticmethod
     def hex_bytes_to_u8_list( hex_bytes:bytes ) -> List[int]:
@@ -72,64 +83,87 @@ class TestCli( unittest.TestCase ):
 
     # Test sha256 implementation vs hashlib
     def test_sha_implementation( self ) -> None:
+        print(self._testMethodName)
         test_input = bytes("test", 'utf-8')
         test_hash = run_test(test_input, len(test_input))
         compare_hash = hashlib.sha256( test_input ).digest()
-        assert test_hash == compare_hash
-        #print(test_hash, "\n", compare_hash, "\n", test_hash == compare_hash)
+
+        self.assertEqual(test_hash, compare_hash)
+    
+    def test_keccak_implementation ( self ) -> None:
+        print(self._testMethodName)
+        test_input = bytes("test", 'utf-8')
+        test_hash = run_test_keccak(test_input, len(test_input))
+        kec = keccak.new(digest_bits=256)
+        compare_hash = kec.update( test_input ).digest()
+
+        self.assertEqual(test_hash, compare_hash)
 
     # Test hash of formed preseal
     def test_preseal_hash( self ) -> None:
+        print(self._testMethodName)
         nonce = 0
         nonce_bytes = self.get_nonce_bytes(nonce)
         pre_seal = nonce_bytes + self.block_bytes
 
         seal = run_test_preseal_hash(bytearray(self.hex_bytes_to_u8_list(pre_seal)))
-        seal_2 = hashlib.sha256( bytearray(self.hex_bytes_to_u8_list(pre_seal)) ).digest()
-        assert seal == seal_2
-        #print(seal, "\n", seal_2, "\n", seal == seal_2)
+        
+        seal_sh256 = hashlib.sha256( bytearray(self.hex_bytes_to_u8_list(pre_seal)) ).digest()
+        kec = keccak.new(digest_bits=256)
+        seal_2 = kec.update( seal_sh256 ).digest()
 
+        self.assertEqual(seal, seal_2)
+    
     # Test create nonce bytes from nonce
     def test_create_nonce_bytes( self ) -> bytes:
+        print(self._testMethodName)
         nonce = 100000000
         nonce_bytes: bytes = run_test_create_nonce_bytes(nonce)
         nonce_bytes_2 = self.get_nonce_bytes(nonce)
         # Unhexlify to compare
         nonce_bytes_2 = binascii.unhexlify(nonce_bytes_2)
-        assert nonce_bytes == nonce_bytes_2
 
+        self.assertEqual(nonce_bytes, nonce_bytes_2)
+    
     # Test create pre seal
     def test_create_pre_seal( self ) -> bytes:
+        print(self._testMethodName)
         nonce = 1304006780
         pre_seal = run_test_create_pre_seal(nonce, self.block_bytes)
 
         nonce_bytes = self.get_nonce_bytes(nonce)
         pre_seal_2 = bytearray(self.hex_bytes_to_u8_list(nonce_bytes + self.block_bytes))
-        assert pre_seal == pre_seal_2
-        #print(pre_seal, "\n", pre_seal_2, "\n", pre_seal == pre_seal_2)
 
+        self.assertEqual(pre_seal, pre_seal_2)
+    
     # Test block and nonce hash
     def test_seal_hash( self ) -> None:
+        print(self._testMethodName)
         nonce = 0
         seal = run_test_seal_hash(self.block_bytes, nonce)
         nonce_bytes = self.get_nonce_bytes(nonce)
         pre_seal = nonce_bytes + self.block_bytes
-        seal_2 = hashlib.sha256( bytearray(self.hex_bytes_to_u8_list(pre_seal)) ).digest()
-        assert seal == seal_2
-        #print(seal, "\n", seal_2, "\n", seal == seal_2)
 
+        seal_sh256 = hashlib.sha256( bytearray(self.hex_bytes_to_u8_list(pre_seal)) ).digest()
+        kec = keccak.new(digest_bits=256)
+        seal_2 = kec.update( seal_sh256 ).digest()
+
+        self.assertEqual(seal, seal_2)
+    
     # Test less than
     def test_less_than( self ) -> None:
+        print(self._testMethodName)
         for _ in range(0, 100):
             a = random.randint(0, 20000000000000000000000)
             b = random.randint(0, 20000000000000000000000)
             a_ = a.to_bytes(32, byteorder='little', signed=False)
             b_ = b.to_bytes(32, byteorder='little', signed=False)
             result = run_test_less_than(a_, b_)
-            assert (a < b) is (result == -1) # -1 means a < b
+            self.assertEqual(a < b, result == -1, f"{a} is{' not' if (a >= b) else ''} less than {b}") # 0 means a < b
 
     # Test seal meets difficulty
     def test_seal_meets_difficulty( self ) -> None:
+        print(self._testMethodName)
         difficulty = 48 * 10**9
         upper = int(self.limit // difficulty)
         upper_bytes = upper.to_bytes(32, byteorder='little', signed=False)
@@ -137,13 +171,19 @@ class TestCli( unittest.TestCase ):
         nonce = 0
         nonce_bytes = self.get_nonce_bytes(nonce)
         pre_seal = nonce_bytes + self.block_bytes
-        seal = hashlib.sha256( bytearray(self.hex_bytes_to_u8_list(pre_seal)) ).digest()
+
+        seal_sh256 = hashlib.sha256( bytearray(self.hex_bytes_to_u8_list(pre_seal)) ).digest()
+        kec = keccak.new(digest_bits=256)
+        seal = kec.update( seal_sh256 ).digest()
+
         result = run_test_seal_meets_difficulty(seal, upper_bytes)
         result_2 = self.seal_meets_difficulty(seal, difficulty)
-        assert result == result_2
 
+        self.assertEqual(result, result_2)
+    
     # Test a solve
     def test_solve( self ) -> None:
+        print(self._testMethodName)
         solution = -1
         interval = 50000
         start_nonce = 0
@@ -152,6 +192,17 @@ class TestCli( unittest.TestCase ):
             # int blockSize, uint64 nonce_start, uint64 update_interval, const unsigned char[:] limit,
             # const unsigned char[:] block_bytes
             solution = solve_cuda(4, start_nonce, interval, self.upper_bytes, self.block_bytes, self.dev_id)
-        assert solution != -1
-        seal = hashlib.sha256( bytearray(self.hex_bytes_to_u8_list(self.get_nonce_bytes(solution) + self.block_bytes)) ).digest()
-        assert self.seal_meets_difficulty(seal, self.difficulty)
+        self.assertNotEqual(solution, -1)
+        
+        seal_sh256 = hashlib.sha256( bytearray(self.hex_bytes_to_u8_list(self.get_nonce_bytes(solution) + self.block_bytes)) ).digest()
+        kec = keccak.new(digest_bits=256)
+        seal = kec.update( seal_sh256 ).digest()
+
+        seal_number = int.from_bytes(seal, "big")
+        limit = int(math.pow(2,256)) - 1
+        product = seal_number * self.difficulty
+
+        self.assertTrue(
+            product < limit, # self.seal_meets_difficulty(seal, self.difficulty)
+            f"solution: {solution} with seal: {seal}  for block_num: {self.bn} \ndoes not meet difficulty {self.difficulty}"
+        )

@@ -26,6 +26,8 @@ typedef unsigned long long LONG;
 
 #define checkCudaErrors(x) \
 { \
+    cudaGetLastError(); \
+    x; \
     cudaError_t err = cudaGetLastError(); \
     if (err != cudaSuccess) {\
         printf("CUDA Error Occurred %s:%d: '%s'\n",__FILE__,__LINE__,cudaGetErrorString(err)); \

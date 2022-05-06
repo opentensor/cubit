@@ -20,7 +20,7 @@
 #ifndef SHA256_H
 #define SHA256_H
 
-#include "types.hh"
+#include "../types.hh"
 
 /****************************** MACROS ******************************/
 #define SHA256_BLOCK_SIZE 32            // SHA256 outputs a 32 byte digest
