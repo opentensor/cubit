@@ -187,7 +187,7 @@ class TestCli( unittest.TestCase ):
     def test_solve( self ) -> None:
         print(self._testMethodName)
         solution = -1
-        interval = 500000
+        interval = 50000
         start_nonce = 0
         time_start = datetime.datetime.now()
         while solution == -1:

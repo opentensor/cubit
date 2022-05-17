@@ -169,11 +169,11 @@ __global__ void solve(BYTE** seals, uint64* solution, uint64 nonce_start, uint64
                             return;
                         }
                         found = true;
-                        for (int k = 0; k < 32; k++) {
+                        //for (int k = 0; k < 32; k++) {
                             // print the seal
-                            printf("%02x ", seal[k]);
-                        }
-                        printf("found nonce %llu \n", j);
+                            //printf("%02x ", seal[k]);
+                        //}
+                        //printf("found nonce %llu \n", j);
                         return;
                     }
                 }
