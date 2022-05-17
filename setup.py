@@ -131,8 +131,8 @@ ext = Extension('bittensor_register_cuda',
             runtime_library_dirs=[CUDA['lib64']],
             extra_compile_args={
                 'gcc': [],
-                'nvcc': [
-                '-arch=sm_61', '--ptxas-options=-v', '-c',
+                'nvcc': ['-Xptxas', '-v', '-O2',
+                '-arch=sm_86', '--ptxas-options=-v', '-c',
                 '--compiler-options', "'-fPIC'"
                 ]
             },
