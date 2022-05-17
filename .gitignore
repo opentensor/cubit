@@ -7,3 +7,5 @@
 /__pycache__
 
 main
+LOG_FILE
+try.py
