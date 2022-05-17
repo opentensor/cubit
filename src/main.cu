@@ -31,6 +31,7 @@
 #include <dirent.h>
 #include <ctype.h>
 
+
 __device__ int lt(uint256 a, uint256 b) {
     // Check if a is less than b
     // Assumes a and b are little-endian
@@ -158,14 +159,13 @@ __global__ void solve(BYTE** seals, uint64* solution, uint64 nonce_start, uint64
                 }
 
                 uint64 nonce = nonce_start + i * update_interval;
-                for (
-                    uint64 j = nonce; j < nonce + update_interval; j++) {
+                for (uint64 j = nonce; j < nonce + update_interval; j++) {
                     create_seal_hash(seal, block_bytes, j);
                     
                     if (seal_meets_difficulty(seal, limit)) {
                         solution[i] = j + 1;
                         if (found) {
-                            printf("also found nonce %llu \n", j);
+                            //printf("also found nonce %llu \n", j);
                             return;
                         }
                         found = true;
