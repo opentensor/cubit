@@ -16,9 +16,11 @@
 # DEALINGS IN THE SOFTWARE.
 
 import binascii
+import datetime
 import hashlib
 import math
 import random
+from time import strftime
 import unittest
 from typing import List
 
@@ -55,7 +57,7 @@ class TestCli( unittest.TestCase ):
         self.st = bt.subtensor(network="endpoint",chain_endpoint="subtensor.fairchild.dev:9944")
         self.bn = self.st.get_current_block()
         self.bh = self.st.substrate.get_block_hash(self.bn)
-        self.difficulty = 100000 #st.difficulty
+        self.difficulty = 10000000 #st.difficulty
         self.limit = int(math.pow(2,256)) - 1
         self.upper = int(self.limit // self.difficulty) - 1
         self.upper_bytes = self.upper.to_bytes(32, byteorder='little', signed=False)
@@ -185,14 +187,19 @@ class TestCli( unittest.TestCase ):
     def test_solve( self ) -> None:
         print(self._testMethodName)
         solution = -1
-        interval = 50000
+        interval = 500000
         start_nonce = 0
+        time_start = datetime.datetime.now()
         while solution == -1:
-            start_nonce += interval*4
+            start_nonce += interval*512
             # int blockSize, uint64 nonce_start, uint64 update_interval, const unsigned char[:] limit,
             # const unsigned char[:] block_bytes
-            solution = solve_cuda(4, start_nonce, interval, self.upper_bytes, self.block_bytes, self.dev_id)
+            solution = solve_cuda(512, start_nonce, interval, self.upper_bytes, self.block_bytes, self.dev_id)
         self.assertNotEqual(solution, -1)
+        time_end = datetime.datetime.now()
+
+        time_diff = time_end - time_start
+        print(f"Solve took: {time_diff.total_seconds()} seconds")
         
         seal_sh256 = hashlib.sha256( bytearray(self.hex_bytes_to_u8_list(self.get_nonce_bytes(solution) + self.block_bytes)) ).digest()
         kec = keccak.new(digest_bits=256)
@@ -204,5 +211,5 @@ class TestCli( unittest.TestCase ):
 
         self.assertTrue(
             product < limit, # self.seal_meets_difficulty(seal, self.difficulty)
-            f"solution: {solution} with seal: {seal}  for block_num: {self.bn} \ndoes not meet difficulty {self.difficulty}"
+            f"solution: {solution} with seal: 0x{seal.hex()} for block_num: {self.bn} \ndoes not meet difficulty {self.difficulty} for block hash: {self.bh}"
         )
