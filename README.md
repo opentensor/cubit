@@ -17,7 +17,6 @@ Testing uses unittest as there is an issue with pytest and Cython
 `python3 -m unittest test.py`
 
 ## TODO
-- Add config for choosing CUDA device
 - Speed-up transfer to host after finding a solution to POW
 - Perhaps use events/streams
 
