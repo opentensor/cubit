@@ -7,7 +7,7 @@ Allows for CUDA registration for bittensor using python.
     bittensor@feature/cuda_solver  
     nvcc (cuda-11.6)
     gcc (9.4.0)
-    sm_86 enabled CUDA GPU (30XX series or higher)
+    sm_61 enabled CUDA GPU (10XX series or higher)
 
 ## Install
 `pip install -e ./bittensor_register_cuda`
