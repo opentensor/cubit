@@ -84,7 +84,7 @@ __device__ bool seal_meets_difficulty(BYTE* seal, uint256 limit) {
 
 __device__ void create_nonce_bytes(uint64 nonce, BYTE* nonce_bytes) {
     // Convert nonce to bytes (little endian) and store at start of pre_seal;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 5; i++) {
         nonce_bytes[i] = (nonce >> (i * 8)) & 0xFF;
     }
 }
