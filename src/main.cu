@@ -139,51 +139,43 @@ __device__ void create_seal_hash(BYTE* seal, BYTE* block_hash, uint64 nonce) {
     create_seal_hash_from_pre_seal(pre_seal, seal); 
 }
 
+// Flag to indicate if a solution has been found. 
+// All threads should stop searching once a solution has been found.
+__device__ bool found = false;
+
 // TODO: Use CUDA streams and events to dispatch new blocks and recieve solutions
-__global__ void solve(BYTE** seals, uint64* solution, uint64 nonce_start, uint64 update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes) {
-        __shared__ bool found;
-        found = false;
-        BYTE seal[64];
-        
-        for (unsigned int i = blockIdx.x * blockDim.x + threadIdx.x; 
-                i < n_nonces; 
+__global__ void solve(uint64* solution, uint64 nonce_start, uint64 update_interval, uint256 limit, BYTE* block_bytes) {
+        for (uint64 i = blockIdx.x * blockDim.x + threadIdx.x; 
+                i < update_interval; 
                 i += blockDim.x * gridDim.x) 
             {
                 if (found) {
                     break;
                 }
+                BYTE seal[64];
 
                 // Make the seal all 0xff
                 for (int j = 0; j < 64; j++) {
                     seal[j] = 0xff;
                 }
 
-                uint64 nonce = nonce_start + i * update_interval;
-                for (uint64 j = nonce; j < nonce + update_interval; j++) {
-                    create_seal_hash(seal, block_bytes, j);
-                    
-                    if (seal_meets_difficulty(seal, limit)) {
-                        solution[i] = j + 1;
-                        if (found) {
-                            //printf("also found nonce %llu \n", j);
-                            return;
-                        }
-                        found = true;
-                        for (int k = 0; k < 32; k++) {
-                            // print the seal
-                            printf("%02x", seal[k]);
-                        }
-                        printf("; i: %d, j: %llu \n", i, j);
-                        BYTE pre_seal[40];  
-                        create_pre_seal(pre_seal, block_bytes, j);
-                        // print pre_seal
-                        for (int k = 0; k < 40; k++) {
-                            printf("%02x", pre_seal[k]);
-                        }
-                        printf("\n");
-                        return;
-                    }
+                uint64 nonce = nonce_start + i;
+                create_seal_hash(seal, block_bytes, nonce);
+                
+                if (seal_meets_difficulty(seal, limit)) {
+                    *solution = nonce + 1;
+                    found = true;
+
+                    // TODO: Find why these lines make it work
+                    // IT'S MAGIC                        
+                    BYTE fake_pre_seal[104];  
+                    BYTE* fake_block_bytes = fake_pre_seal + 40;
+                    create_pre_seal(fake_pre_seal, fake_block_bytes, 10);
+                    while (false);
+
+                    return;
                 }
+                
             }            
 }
 
@@ -219,10 +211,10 @@ __global__ void test_seal_meets_difficulty(BYTE* seal, uint256 limit, bool* resu
     *result = seal_meets_difficulty(seal, limit);
 }
 
-void runSolve(int blockSize, BYTE** seals, uint64* solution, uint64 nonce_start, uint64 update_interval, uint256 limit, BYTE* block_bytes) {
+void runSolve(int blockSize, uint64* solution, uint64 nonce_start, uint64 update_interval, uint256 limit, BYTE* block_bytes) {
 	int numBlocks = (blockSize + blockSize - 1) / blockSize;
 
-	solve <<< numBlocks, blockSize >>> (seals, solution, nonce_start, update_interval, blockSize, limit, block_bytes);
+	solve <<< numBlocks, blockSize >>> (solution, nonce_start, update_interval, limit, block_bytes);
 }
 
 bool runTestSealMeetsDifficulty(BYTE* seal, uint256 limit) {
@@ -371,7 +363,7 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update
 	unsigned char* block_bytes_d;
     unsigned char* block_bytes_h;
     uint64* solution_d;
-    uint64* solutions;
+    uint64* solution_;
     uint64 solution = 0;
     unsigned long* limit_d;
     unsigned long* limit_h;
@@ -379,7 +371,7 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update
     checkCudaErrors(cudaSetDevice(dev_id));
 
     // Allocate pinned memory on host. This should speed up the data transfer back.
-    checkCudaErrors(cudaMallocHost((void**)&solutions, blockSize * 8 * sizeof(unsigned long)));
+    checkCudaErrors(cudaMallocHost((void**)&solution_, sizeof(uint64)));
     checkCudaErrors(cudaMallocHost((void**)&block_bytes_h, 64 * sizeof(BYTE)));
     checkCudaErrors(cudaMallocHost((void**)&limit_h, 8 * sizeof(unsigned long)));
     // Copy into pinned memory
@@ -388,7 +380,7 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update
     // Allocate memory on device
     
     // Malloc space for solution in device memory. Should be a single unsigned long.
-    checkCudaErrors(cudaMallocManaged(&solution_d, blockSize * sizeof(uint64)));
+    checkCudaErrors(cudaMallocManaged(&solution_d, sizeof(uint64)));
     // Malloc space for block_bytes in device memory. Should be 32 bytes.
     checkCudaErrors(cudaMallocManaged(&block_bytes_d, 64 * sizeof(BYTE)));
     // Malloc space for limit in device memory.
@@ -401,31 +393,26 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update
     checkCudaErrors(cudaMemcpy(limit_d, limit_h, 8 * sizeof(unsigned long), cudaMemcpyHostToDevice));
 
     // Zero out solution
-    checkCudaErrors(cudaMemset(solution_d, 0, blockSize * sizeof(uint64)));
+    checkCudaErrors(cudaMemset(solution_d, 0, sizeof(uint64)));
 
     checkCudaErrors(cudaDeviceSynchronize());
 
     // Running Solve on GPU
-	runSolve(blockSize, NULL, solution_d, nonce_start, update_interval, limit_d, block_bytes_d);
+	runSolve(blockSize, solution_d, nonce_start, update_interval, limit_d, block_bytes_d);
 
 	checkCudaErrors(cudaDeviceSynchronize());
     
     // Copy data back to host memory
-    checkCudaErrors(cudaMemcpy(solutions, solution_d, blockSize * sizeof(uint64), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(solution_, solution_d, sizeof(uint64), cudaMemcpyDeviceToHost));
     // Check if solution is valid
-    for (int i = 0; i < blockSize; i++) {
-        if (solutions[i] != 0) {
-            solution = solutions[i];
-            break;
-        }
-    }
+    solution = *solution_;
 
     // Free memory
     checkCudaErrors(cudaFree(solution_d));
     checkCudaErrors(cudaFree(block_bytes_d));
     checkCudaErrors(cudaFree(limit_d));
 
-    checkCudaErrors(cudaFreeHost(solutions));
+    checkCudaErrors(cudaFreeHost(solution_));
     checkCudaErrors(cudaFreeHost(block_bytes_h));
     checkCudaErrors(cudaFreeHost(limit_h));	
 
