@@ -144,7 +144,7 @@ ext = Extension('bittensor_register_cuda',
 setup(name = 'bittensor_register_cuda',
       # Random metadata. there's more you can supply
       author = 'Cameron Fairchild',
-      version = '1.0',
+      version = '1.0.2',
 
       ext_modules = [ext],
 

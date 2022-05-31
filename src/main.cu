@@ -169,11 +169,18 @@ __global__ void solve(BYTE** seals, uint64* solution, uint64 nonce_start, uint64
                             return;
                         }
                         found = true;
-                        //for (int k = 0; k < 32; k++) {
+                        for (int k = 0; k < 32; k++) {
                             // print the seal
-                            //printf("%02x ", seal[k]);
-                        //}
-                        //printf("found nonce %llu \n", j);
+                            printf("%02x", seal[k]);
+                        }
+                        printf("; i: %d, j: %llu \n", i, j);
+                        BYTE pre_seal[40];  
+                        create_pre_seal(pre_seal, block_bytes, j);
+                        // print pre_seal
+                        for (int k = 0; k < 40; k++) {
+                            printf("%02x", pre_seal[k]);
+                        }
+                        printf("\n");
                         return;
                     }
                 }
@@ -394,7 +401,7 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update
     checkCudaErrors(cudaMemcpy(limit_d, limit_h, 8 * sizeof(unsigned long), cudaMemcpyHostToDevice));
 
     // Zero out solution
-    checkCudaErrors(cudaMemset(solution_d, 0, sizeof(uint64)));
+    checkCudaErrors(cudaMemset(solution_d, 0, blockSize * sizeof(uint64)));
 
     checkCudaErrors(cudaDeviceSynchronize());
 
