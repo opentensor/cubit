@@ -193,7 +193,7 @@ class TestCli( unittest.TestCase ):
         while solution == -1:
             # int blockSize, uint64 nonce_start, uint64 update_interval, const unsigned char[:] limit,
             # const unsigned char[:] block_bytes
-            solution = solve_cuda(512, start_nonce, interval, self.upper_bytes, self.block_bytes, self.dev_id)
+            solution = solve_cuda(256, start_nonce, interval, self.upper_bytes, self.block_bytes, self.dev_id)
             start_nonce += interval
 
         self.assertNotEqual(solution, -1)
