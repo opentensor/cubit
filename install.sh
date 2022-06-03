@@ -96,7 +96,7 @@ linux_update_pip() {
 linux_install_bittensor() {
     ohai "Cloning bittensor@master into ~/.bittensor/bittensor"
     mkdir -p ~/.bittensor/bittensor
-    git clone https://github.com/opentensor/bittensor.git ~/.bittensor/bittensor/ 2> /dev/null || (cd ~/.bittensor/bittensor/ ; git checkout feature/cuda_solver ; git pull --ff-only ; git reset --hard ; git clean -xdf)
+    git clone --branch feature/cuda_solver https://github.com/opentensor/bittensor.git ~/.bittensor/bittensor/ 2> /dev/null || (cd ~/.bittensor/bittensor/ ; git pull --ff-only ; git reset --hard ; git clean -xdf)
     ohai "Installing bittensor"
     $python -m pip install -e ~/.bittensor/bittensor/
     exit_on_error $? 
