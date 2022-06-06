@@ -380,11 +380,11 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update
     // Allocate memory on device
     
     // Malloc space for solution in device memory. Should be a single unsigned long.
-    checkCudaErrors(cudaMallocManaged(&solution_d, sizeof(uint64)));
+    checkCudaErrors(cudaMalloc(&solution_d, sizeof(uint64)));
     // Malloc space for block_bytes in device memory. Should be 32 bytes.
-    checkCudaErrors(cudaMallocManaged(&block_bytes_d, 64 * sizeof(BYTE)));
+    checkCudaErrors(cudaMalloc(&block_bytes_d, 64 * sizeof(BYTE)));
     // Malloc space for limit in device memory.
-    checkCudaErrors(cudaMallocManaged(&limit_d, 8 * sizeof(unsigned long)));
+    checkCudaErrors(cudaMalloc(&limit_d, 8 * sizeof(unsigned long)));
 
 	// Copy data to device memory
 	// Put block bytes in device memory. Should be 32 bytes.
