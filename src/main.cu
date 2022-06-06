@@ -164,6 +164,7 @@ __global__ void solve(uint64* solution, uint64 nonce_start, uint64 update_interv
                 
                 if (seal_meets_difficulty(seal, limit)) {
                     *solution = nonce + 1;
+                    printf("Solution found! %llu\n", *solution);
                     found = true;
 
                     // TODO: Find why these lines make it work
@@ -378,13 +379,22 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update
     memcpy(block_bytes_h, block_bytes, 64 * sizeof(BYTE));
     memcpy(limit_h, limit, 8 * sizeof(unsigned long));
     // Allocate memory on device
-    
-    // Malloc space for solution in device memory. Should be a single unsigned long.
-    checkCudaErrors(cudaMalloc(&solution_d, sizeof(uint64)));
-    // Malloc space for block_bytes in device memory. Should be 32 bytes.
-    checkCudaErrors(cudaMalloc(&block_bytes_d, 64 * sizeof(BYTE)));
-    // Malloc space for limit in device memory.
-    checkCudaErrors(cudaMalloc(&limit_d, 8 * sizeof(unsigned long)));
+    // Check if managed memory is available
+    if (cudaDevAttrConcurrentManagedAccess == 1) {
+        // Malloc space for solution in device memory. Should be a single unsigned long.
+        checkCudaErrors(cudaMallocManaged(&solution_d, sizeof(uint64)));
+        // Malloc space for block_bytes in device memory. Should be 32 bytes.
+        checkCudaErrors(cudaMallocManaged(&block_bytes_d, 64 * sizeof(BYTE)));
+        // Malloc space for limit in device memory.
+        checkCudaErrors(cudaMallocManaged(&limit_d, 8 * sizeof(unsigned long)));
+    } else {
+        // Malloc space for solution in device memory. Should be a single unsigned long.
+        checkCudaErrors(cudaMalloc(&solution_d, sizeof(uint64)));
+        // Malloc space for block_bytes in device memory. Should be 32 bytes.
+        checkCudaErrors(cudaMalloc(&block_bytes_d, 64 * sizeof(BYTE)));
+        // Malloc space for limit in device memory.
+        checkCudaErrors(cudaMalloc(&limit_d, 8 * sizeof(unsigned long)));
+    }
 
 	// Copy data to device memory
 	// Put block bytes in device memory. Should be 32 bytes.
