@@ -144,40 +144,41 @@ __device__ void create_seal_hash(BYTE* seal, BYTE* block_hash, uint64 nonce) {
 __device__ bool found = false;
 
 // TODO: Use CUDA streams and events to dispatch new blocks and recieve solutions
-__global__ void solve(uint64* solution, uint64 nonce_start, uint64 update_interval, uint256 limit, BYTE* block_bytes) {
-        for (uint64 i = blockIdx.x * blockDim.x + threadIdx.x; 
-                i < update_interval; 
-                i += blockDim.x * gridDim.x) 
-            {
-                if (found) {
-                    break;
-                }
-                BYTE seal[64];
+__global__ void solve(uint64* solution, uint64 nonce_start, uint64 update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes) {
+    for (uint64 i = blockIdx.x * blockDim.x + threadIdx.x; 
+        i < n_nonces; 
+        i += blockDim.x * gridDim.x) 
+    {
+        if (found) {
+            break;
+        }
+        BYTE seal[64];
 
-                // Make the seal all 0xff
-                for (int j = 0; j < 64; j++) {
-                    seal[j] = 0xff;
-                }
+        // Make the seal all 0xff
+        for (int j = 0; j < 64; j++) {
+            seal[j] = 0xff;
+        }
 
-                uint64 nonce = nonce_start + i;
-                create_seal_hash(seal, block_bytes, nonce);
-                
-                if (seal_meets_difficulty(seal, limit)) {
-                    *solution = nonce + 1;
-                    printf("Solution found! %llu\n", *solution);
-                    found = true;
+        uint64 nonce = nonce_start + i * update_interval;
+        for (uint64 j = nonce; j < nonce + update_interval; j++) {
+            create_seal_hash(seal, block_bytes, j);
+        
+            if (seal_meets_difficulty(seal, limit)) {
+                *solution = j + 1;
+                printf("Solution found! %llu\n", *solution);
+                found = true;
 
-                    // TODO: Find why these lines make it work
-                    // IT'S MAGIC                        
-                    BYTE fake_pre_seal[104];  
-                    BYTE* fake_block_bytes = fake_pre_seal + 40;
-                    create_pre_seal(fake_pre_seal, fake_block_bytes, 10);
-                    while (false);
+                // TODO: Find why these lines make it work
+                // IT'S MAGIC                        
+                BYTE fake_pre_seal[104];  
+                BYTE* fake_block_bytes = fake_pre_seal + 40;
+                create_pre_seal(fake_pre_seal, fake_block_bytes, 10);
+                while (false);
 
-                    return;
-                }
-                
-            }            
+                return;
+            }
+        }
+    }            
 }
 
 __global__ void test_lt(uint256 a, uint256 b, int* result) {
@@ -215,7 +216,7 @@ __global__ void test_seal_meets_difficulty(BYTE* seal, uint256 limit, bool* resu
 void runSolve(int blockSize, uint64* solution, uint64 nonce_start, uint64 update_interval, uint256 limit, BYTE* block_bytes) {
 	int numBlocks = (blockSize + blockSize - 1) / blockSize;
 
-	solve <<< numBlocks, blockSize >>> (solution, nonce_start, update_interval, limit, block_bytes);
+	solve <<< numBlocks, blockSize >>> (solution, nonce_start, update_interval, blockSize, limit, block_bytes);
 }
 
 bool runTestSealMeetsDifficulty(BYTE* seal, uint256 limit) {
