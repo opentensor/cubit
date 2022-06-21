@@ -5,6 +5,7 @@
 /*.egg-info
 /.pytest_cache
 /__pycache__
+auto_reg
 
 main
 LOG_FILE
