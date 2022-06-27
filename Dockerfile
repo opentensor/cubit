@@ -12,7 +12,7 @@ RUN apt install -y curl sudo nano git htop wget unzip python3-dev tmux
 ADD install.sh /install_bittensor.sh
 RUN chmod +x /install_bittensor.sh
 RUN bash /install_bittensor.sh
-RUN pip3 install Cython==0.29.14 
+RUN pip3 install Cython>=0.29.14 
 
 COPY . /bittensor_register_cuda/
 RUN cd /bittensor_register_cuda && pip3 install -e .

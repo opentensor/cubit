@@ -1,4 +1,4 @@
-Cython==0.29.14 
+Cython>=0.29.14 
 pytest>=6.2.4
 pycryptodome==3.4.3
 git+https://github.com/opentensor/bittensor@master#egg=bittensor
