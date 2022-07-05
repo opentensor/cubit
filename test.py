@@ -187,14 +187,15 @@ class TestCli( unittest.TestCase ):
     def test_solve( self ) -> None:
         print(self._testMethodName)
         solution = -1
-        interval = 10_000_000
+        interval = 30_000
         start_nonce = 0
         time_start = datetime.datetime.now()
+        TPB = 256
         while solution == -1:
             # int blockSize, uint64 nonce_start, uint64 update_interval, const unsigned char[:] limit,
             # const unsigned char[:] block_bytes
-            solution = solve_cuda(256, start_nonce, interval, self.upper_bytes, self.block_bytes, self.dev_id)
-            start_nonce += interval
+            solution = solve_cuda(TPB, start_nonce, interval, self.upper_bytes, self.block_bytes, self.dev_id)
+            start_nonce += interval * TPB
 
         self.assertNotEqual(solution, -1)
         time_end = datetime.datetime.now()

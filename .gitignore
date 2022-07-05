@@ -1,5 +1,5 @@
 /.vscode
-/bittensor_register_cuda.cpython-38-x86_64-linux-gnu.so
+bittensor_register_cuda.*.so
 /build
 /cuda_solve.cpp
 /*.egg-info
