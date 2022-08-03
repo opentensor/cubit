@@ -133,7 +133,7 @@ ext = Extension('bittensor_register_cuda',
             extra_compile_args={
                 'gcc': [],
                 'nvcc': ['-Xptxas', '-v', '-O2',
-                '-arch=sm_61', '--ptxas-options=-v', '-c',
+                '-arch=sm_86', '--ptxas-options=-v', '-c',
                 '--compiler-options', "'-fPIC'"
                 ]
             },
