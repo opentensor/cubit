@@ -57,7 +57,7 @@ class TestCli( unittest.TestCase ):
         self.st = bt.subtensor(network="endpoint",chain_endpoint="subtensor.fairchild.dev:9944")
         self.bn = self.st.get_current_block()
         self.bh = self.st.substrate.get_block_hash(self.bn)
-        self.difficulty = 100_000_000 #st.difficulty
+        self.difficulty = 1_000_000_000 #st.difficulty
         self.limit = int(math.pow(2,256)) - 1
         self.upper = int(self.limit // self.difficulty) - 1
         self.upper_bytes = self.upper.to_bytes(32, byteorder='little', signed=False)
