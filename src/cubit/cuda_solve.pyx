@@ -24,16 +24,16 @@ from cpython.mem cimport PyMem_Malloc, PyMem_Free
 from libc.string cimport memcpy
 import array
 
-cdef extern from "src/int128.hh":
+cdef extern from "cuda-src/int128.hh":
     ctypedef int int128
 
-cdef extern from "src/uint64.cuh":
+cdef extern from "cuda-src/uint64.cuh":
     ctypedef unsigned long long uint64;
 
-cdef extern from "src/uint256.cuh":    
+cdef extern from "cuda-src/uint256.cuh":    
     ctypedef unsigned long uint256[8]
 
-cdef extern from "src/main.hh":
+cdef extern from "cuda-src/main.hh":
     void reset_cuda_c();
     int runTestSealMeetsDifficulty(unsigned char* seal, unsigned long* limit);
     int runTestLessThan(uint256 a, uint256 b);

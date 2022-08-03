@@ -130,7 +130,7 @@ except AttributeError:
 
 
 ext = Extension('bittensor_register_cuda',
-        sources = ['src/main.cu', 'cuda_solve.pyx'],
+        sources = ['src/cubit/cuda-src/main.cu', 'src/cubit/cuda_solve.pyx'],
         library_dirs=[CUDA['lib64']],
             libraries=['cudart'],
             language='c++',
@@ -146,7 +146,7 @@ ext = Extension('bittensor_register_cuda',
 
 
 
-setup(name = 'bittensor_register_cuda',
+setup(name = 'cubit',
       # Random metadata. there's more you can supply
       author = 'Cameron Fairchild',
       version = '1.0.2',
