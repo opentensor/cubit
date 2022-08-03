@@ -148,8 +148,8 @@ ext = Extension('bittensor_register_cuda',
 
 setup(name = 'cubit',
       # Random metadata. there's more you can supply
-      author = 'Cameron Fairchild',
-      version = '1.0.2',
+      author = 'Opentensor Foundation',
+      version = '1.0.3',
 
       ext_modules = [ext],
 
