@@ -1,12 +1,11 @@
-/.vscode
-bittensor_register_cuda.*.so
-/build
-/cuda_solve.cpp
-/*.egg-info
-/.pytest_cache
-/__pycache__
+.vscode
+*.so
+build
+*.cpp
+*.egg-info
+/dist
+.pytest_cache
+__pycache__
 auto_reg
 
-main
-LOG_FILE
 try.py
