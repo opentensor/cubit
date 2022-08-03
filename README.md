@@ -24,4 +24,4 @@ Testing uses unittest as there is an issue with pytest and Cython
   
 https://github.com/rmcgibbo/npcuda-example/  
 https://github.com/mochimodev/cuda-hashing-algos/  
-https://github.com/camfairchild/cubit/
+https://github.com/camfairchild/bittensor_register_cuda/
