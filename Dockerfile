@@ -14,5 +14,5 @@ RUN chmod +x /install_bittensor.sh
 RUN bash /install_bittensor.sh
 RUN pip3 install Cython>=0.29.14 
 
-COPY . /bittensor_register_cuda/
-RUN cd /bittensor_register_cuda && pip3 install -e .
+COPY . /cubit/
+RUN cd /cubit && pip3 install -e .

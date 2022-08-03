@@ -1,11 +1,11 @@
-# Bittensor Register CUDA
+# cubit
 
-Allows for CUDA registration for bittensor using python.
+A python package to register on the bittensor network using a CUDA device.
 
 ## Requirements
     Cython
     bittensor@feature/cuda_solver  
-    nvcc (cuda-11.6)
+    nvcc (cuda-11.3)
     gcc (9.4.0)
     sm_86 enabled CUDA GPU (30XX series, Axxxx series or higher)
 
@@ -24,4 +24,4 @@ Testing uses unittest as there is an issue with pytest and Cython
   
 https://github.com/rmcgibbo/npcuda-example/  
 https://github.com/mochimodev/cuda-hashing-algos/  
-https://github.com/camfairchild/bittensor_register_cuda/
+https://github.com/camfairchild/cubit/
