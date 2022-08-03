@@ -1,5 +1,6 @@
 # The MIT License (MIT)
 # Copyright © 2022 Cameron Fairchild
+# Copyright © 2022 Opentensor Foundation
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
 # documentation files (the “Software”), to deal in the Software without restriction, including without limitation 
@@ -53,7 +54,7 @@ class TestCli( unittest.TestCase ):
             print("No GPU available")
             self.fail("No GPU available")
 
-        self.dev_id = 0 # By default, use the first GPU
+        self.dev_id = 5 # By default, use the first GPU
         self.st = bt.subtensor(network="endpoint",chain_endpoint="subtensor.fairchild.dev:9944")
         self.bn = self.st.get_current_block()
         self.bh = self.st.substrate.get_block_hash(self.bn)
