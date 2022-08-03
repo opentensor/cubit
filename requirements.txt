@@ -2,4 +2,4 @@ Cython>=0.29.14
 pytest>=6.2.4
 pycryptodome==3.4.3
 ruamel.yaml>=0.17.21
-git+https://github.com/opentensor/bittensor@master#egg=bittensor
+numpy>=1.22.3
