@@ -129,7 +129,7 @@ except AttributeError:
     numpy_include = numpy.get_numpy_include()
 
 
-ext = Extension('bittensor_register_cuda',
+ext = Extension('cubit',
         sources = ['src/cubit/cuda-src/main.cu', 'src/cubit/cuda_solve.pyx'],
         library_dirs=[CUDA['lib64']],
             libraries=['cudart'],
