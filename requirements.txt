@@ -1,5 +1,4 @@
-Cython>=0.29.14 
 pytest>=6.2.4
 pycryptodome==3.4.3
 ruamel.yaml>=0.17.21
-numpy>=1.22.3
+git+https://github.com/opentensor/bittensor@feature/cuda_solver#egg=bittensor
