@@ -21,7 +21,6 @@ import datetime
 import hashlib
 import math
 import random
-from time import strftime
 import unittest
 from typing import List
 
@@ -29,7 +28,7 @@ import bittensor as bt
 import torch
 from Crypto.Hash import keccak
 
-from bittensor_register_cuda import (reset_cuda, run_test,
+from cubit import (reset_cuda, run_test,
                                      run_test_create_nonce_bytes,
                                      run_test_create_pre_seal, run_test_keccak,
                                      run_test_less_than, run_test_preseal_hash,
