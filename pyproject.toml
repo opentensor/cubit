@@ -18,16 +18,12 @@ classifiers = [
 ]
 keywords = ["bittensor", "cuda", "register", "cubit"]
 dependencies = [
-    "ruamel.yaml >= 0.17.21",
-    "pycryptodome == 3.4.3",
-    "pytest >= 6.2.4",
     'tomli; python_version < "3.11"',
-    "bittensor >= 3.0.0",
 ]
 requires-python = ">=3.9"
 
 [project.optional-dependencies]
-dev = ["black", "pip-tools", "pytest"]
+dev = ["black", "pip-tools", "unittest", "git+https://github.com/opentensor/bittensor@feature/cuda_solver#egg=bittensor", "pycryptodome==3.4.3" ]
 
 [project.urls]
 Homepage = "https://github.com/opentensor/cubit"

@@ -4,7 +4,6 @@ build
 *.cpp
 *.egg-info
 /dist
-.pytest_cache
 __pycache__
 auto_reg
 
