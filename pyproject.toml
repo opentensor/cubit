@@ -23,7 +23,7 @@ dependencies = [
 requires-python = ">=3.9"
 
 [project.optional-dependencies]
-dev = ["black", "pip-tools", "unittest", "bittensor>=3.0.0", "pycryptodome==3.4.3" ]
+test = ["black", "pip-tools", "bittensor>=3.0.0", "pycryptodome==3.4.3" ]
 
 [project.urls]
 Homepage = "https://github.com/opentensor/cubit"
