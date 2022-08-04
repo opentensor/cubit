@@ -25,6 +25,7 @@ import os
 from os.path import join as pjoin
 from setuptools import find_packages, setup, Extension
 from Cython.Distutils import build_ext
+from Cython.Build import cythonize
 import numpy
 
 def find_in_path(name, path):
@@ -128,7 +129,6 @@ try:
 except AttributeError:
     numpy_include = numpy.get_numpy_include()
 
-
 ext = Extension('cubit',
         sources = ['src/cubit/kernels/main.cu', 'src/cubit/cuda_solve.pyx'],
         library_dirs=[CUDA['lib64']],
@@ -142,23 +142,24 @@ ext = Extension('cubit',
                 '--compiler-options', "'-fPIC'"
                 ]
             },
-            include_dirs = [numpy_include, CUDA['include'], 'src/cubit/'])
+            include_dirs = [numpy_include, CUDA['include']])
 
 
 
-setup(name = 'cubit',
-      # Random metadata. there's more you can supply
-      author = 'Opentensor Foundation',
-      author_email = 'cameron@opentensor.ai',
-      url = 'https://github.com/opentensor/cubit',
-      version = '1.0.3',
+setup(
+    name = 'cubit',
+    # Random metadata. there's more you can supply
+    author = 'Opentensor Foundation',
+    author_email = 'cameron@opentensor.ai',
+    url = 'https://github.com/opentensor/cubit',
+    version = '1.0.4',
 
-      ext_modules = [ext],
+    ext_modules = cythonize(ext),
 
-      # Inject our custom trigger
-      cmdclass = {'build_ext': custom_build_ext},
+    # Inject our custom trigger
+    cmdclass = {'build_ext': custom_build_ext},
 
-      # Since the package has c code, the egg cannot be zipped
-      zip_safe = False,
-      packages=find_packages()
+    # Since the package has c code, the egg cannot be zipped
+    zip_safe = False,
+    packages=find_packages(),
 )
