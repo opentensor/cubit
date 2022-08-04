@@ -1,9 +1,8 @@
-#!python
 #cython: language_level=3
 
 # The MIT License (MIT)
-# Copyright © 2022 Cameron Fairchild
-# Copyright © 2022 Opentensor Foundation
+# Copyright (c) 2022 Cameron Fairchild
+# Copyright (c) 2022 Opentensor Foundation
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
 # documentation files (the “Software”), to deal in the Software without restriction, including without limitation 
@@ -24,16 +23,16 @@ from cpython.mem cimport PyMem_Malloc, PyMem_Free
 from libc.string cimport memcpy
 import array
 
-cdef extern from "cuda-src/int128.hh":
+cdef extern from "kernels/int128.hh":
     ctypedef int int128
 
-cdef extern from "cuda-src/uint64.cuh":
+cdef extern from "kernels/uint64.cuh":
     ctypedef unsigned long long uint64;
 
-cdef extern from "cuda-src/uint256.cuh":    
+cdef extern from "kernels/uint256.cuh":    
     ctypedef unsigned long uint256[8]
 
-cdef extern from "cuda-src/main.hh":
+cdef extern from "kernels/main.hh":
     void reset_cuda_c();
     int runTestSealMeetsDifficulty(unsigned char* seal, unsigned long* limit);
     int runTestLessThan(uint256 a, uint256 b);

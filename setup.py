@@ -130,7 +130,7 @@ except AttributeError:
 
 
 ext = Extension('cubit',
-        sources = ['src/cubit/cuda-src/main.cu', 'src/cubit/cuda_solve.pyx'],
+        sources = ['src/cubit/kernels/main.cu', 'src/cubit/cuda_solve.pyx'],
         library_dirs=[CUDA['lib64']],
             libraries=['cudart'],
             language='c++',
@@ -142,7 +142,7 @@ ext = Extension('cubit',
                 '--compiler-options', "'-fPIC'"
                 ]
             },
-            include_dirs = [numpy_include, CUDA['include'], 'src'])
+            include_dirs = [numpy_include, CUDA['include'], 'src/cubit/'])
 
 
 

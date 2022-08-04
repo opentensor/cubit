@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
- * Copyright © 2022 Cameron Fairchild
- * Copyright © 2022 Opentensor Foundation
+ * Copyright (c) 2022 Cameron Fairchild
+ * Copyright (c) 2022 Opentensor Foundation
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the “Software”), to deal in the Software without restriction, including without limitation 
@@ -18,18 +18,21 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef MAIN_H
-#define MAIN_H
+#ifndef TYPES_H
+#define TYPES_H
 
-extern void reset_cuda_c();
-extern int runTestLessThan(unsigned long* a, unsigned long* b);
-extern bool runTestSealMeetsDifficulty(unsigned char* seal, unsigned long* limit);
-extern void runTestCreatePreSeal(unsigned char* pre_seal, uint64 nonce, unsigned char* block_bytes);
-extern void runTestCreateNonceBytes(unsigned long long nonce, unsigned char* nonce_bytes);
-extern void runTestPreSealHash(unsigned char* seal, unsigned char* preseal_bytes);
-extern void runTestSealHash(unsigned char* seal, unsigned char* block_hash, uint64 nonce);
-extern void runTest(unsigned char* data, unsigned long size, unsigned char* digest);
-extern void runTestKeccak(unsigned char* data, unsigned long size, unsigned char* digest);
-extern uint64 solve_cuda_c(int blockSize, unsigned char* seal, uint64 nonce_start, uint64 update_interval, unsigned long* limit, unsigned char* block_bytes, int dev_id);
+typedef unsigned char BYTE;             // 8-bit byte
+typedef unsigned int  WORD;             // 32-bit word, change to "long" for 16-bit machines
+typedef unsigned long long LONG;
 
-#endif // MAIN_H
+#define checkCudaErrors(x) \
+{ \
+    cudaGetLastError(); \
+    x; \
+    cudaError_t err = cudaGetLastError(); \
+    if (err != cudaSuccess) {\
+        printf("CUDA Error Occurred %s:%d: '%s'\n",__FILE__,__LINE__,cudaGetErrorString(err)); \
+    } \
+}
+
+#endif   // TYPES_H
