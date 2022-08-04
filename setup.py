@@ -23,7 +23,7 @@
 
 import os
 from os.path import join as pjoin
-from setuptools import setup, Extension
+from setuptools import find_packages, setup, Extension
 from Cython.Distutils import build_ext
 import numpy
 
@@ -159,4 +159,6 @@ setup(name = 'cubit',
       cmdclass = {'build_ext': custom_build_ext},
 
       # Since the package has c code, the egg cannot be zipped
-      zip_safe = False)
+      zip_safe = False,
+      packages=find_packages()
+)
