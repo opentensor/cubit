@@ -149,6 +149,8 @@ ext = Extension('cubit',
 setup(name = 'cubit',
       # Random metadata. there's more you can supply
       author = 'Opentensor Foundation',
+      author_email = 'cameron@opentensor.ai',
+      url = 'https://github.com/opentensor/cubit',
       version = '1.0.3',
 
       ext_modules = [ext],
