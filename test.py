@@ -55,7 +55,7 @@ class TestCli( unittest.TestCase ):
             self.fail("No GPU available")
 
         self.dev_id = 0 # By default, use the first GPU
-        self.st = bt.subtensor(network="endpoint",chain_endpoint="subtensor.fairchild.dev:9944")
+        self.st = bt.subtensor(network="nakamoto")
         self.bn = self.st.get_current_block()
         self.bh = self.st.substrate.get_block_hash(self.bn)
         self.difficulty = 1_000_000_000 #st.difficulty
