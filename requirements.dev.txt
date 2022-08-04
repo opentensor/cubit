@@ -1,0 +1,4 @@
+setuptools>=59.0.0
+wheel
+Cython>=0.29.14
+numpy>=1.19.0
