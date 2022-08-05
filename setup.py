@@ -130,14 +130,14 @@ except AttributeError:
     numpy_include = numpy.get_numpy_include()
 
 ext = Extension('cubit',
-        sources = ['src/cubit/kernels/main.cu', 'src/cubit/cuda_solve.pyx'],
+        sources = ['kernels/main.cu', 'cubit.pyx'],
         library_dirs=[CUDA['lib64']],
             libraries=['cudart'],
             language='c++',
             runtime_library_dirs=[CUDA['lib64']],
             extra_compile_args={
                 'gcc': [],
-                'nvcc': ['-Xptxas', '-v', '-O2',
+                'nvcc': ['-Xptxas', '-v', '-O3',
                 '-arch=sm_86', '--ptxas-options=-v', '-c',
                 '--compiler-options', "'-fPIC'"
                 ]
@@ -152,7 +152,7 @@ setup(
     author = 'Opentensor Foundation',
     author_email = 'cameron@opentensor.ai',
     url = 'https://github.com/opentensor/cubit',
-    version = '1.0.4',
+    version = '1.0.5',
 
     ext_modules = cythonize(ext),
 

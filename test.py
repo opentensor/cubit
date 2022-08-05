@@ -54,7 +54,7 @@ class TestCli( unittest.TestCase ):
             print("No GPU available")
             self.fail("No GPU available")
 
-        self.dev_id = 0 # By default, use the first GPU
+        self.dev_id = 5 # By default, use the first GPU
         self.st = bt.subtensor(network="nakamoto")
         self.bn = self.st.get_current_block()
         self.bh = self.st.substrate.get_block_hash(self.bn)
