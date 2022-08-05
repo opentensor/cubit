@@ -8,26 +8,22 @@ A python package to register on the bittensor network using a CUDA device.
     sm_86 enabled CUDA GPU (30XX series, Axxxx series or higher)
 
 ## Install
-At the moment you can only install from source  
-<!--Create install dir
-`mkdir cubit-tmp`  
-Enter tmp dir  
-`cd ./cubit-tmp`  
-Download wheel `*.whl` from [releases](https://github.com/opentensor/cubit/releases/latest)  
-`wget https://github.com/opentensor/cubit/releases/download/v1.0.3/cubit-1.0.3-cp310-cp310-linux_x86_64.whl`  
-Install the wheel  
-`pip install cubit-1.0.3-cp310-cp310-linux_x86_64.whl`  
+Using the wheel for your version of python (3.9, 3.10) from [releases](https://github.com/opentensor/cubit/releases/latest)  
+For Python 3.9  
+`pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp39-cp39-linux_x86_64.whl`   
+For Python 3.10  
+`pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp310-cp310-linux_x86_64.whl`    
 
 #### Install testing dependencies
-Install `test` extras from wheel  
-`pip install cubit-1.0.3-cp310-cp310-linux_x86_64.whl[test]`-->  
+Install `test` extras from wheel (python 3.10)
+`pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp310-cp310-linux_x86_64.whl[test]`  
 
 ### From source
 #### Requirements   
-    [cuda-toolkit 11.3 or higher](https://developer.nvidia.com/cuda-downloads)
-     - nvcc
-    gcc (9.3.1 or higher)
-    python 3.9 or higher  
+- [cuda-toolkit 11.3 or higher](https://developer.nvidia.com/cuda-downloads)
+    - nvcc
+- gcc (9.3.1 or higher)
+- python 3.9 or higher  
     
 You can check if you have cuda-toolkit with `nvcc --version`  
 
