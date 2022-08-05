@@ -3,9 +3,9 @@
 A python package to register on the bittensor network using a CUDA device.
 
 ## Requirements
-    Ubuntu 20.04 or higher  
-    bittensor@feature/cuda_solver  
-    sm_86 enabled CUDA GPU (30XX series, Axxxx series or higher)
+- Ubuntu 20.04 or higher  
+- bittensor@feature/cuda_solver  
+- sm_86 enabled CUDA GPU (30XX series, Axxxx series or higher)
 
 ## Install
 Using the wheel for your version of python (3.9, 3.10) from [releases](https://github.com/opentensor/cubit/releases/latest)  
@@ -15,7 +15,7 @@ For Python 3.10
 `pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp310-cp310-linux_x86_64.whl`    
 
 #### Install testing dependencies
-Install `test` extras from wheel (python 3.10)
+Install `test` extras from wheel (python 3.10)  
 `pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp310-cp310-linux_x86_64.whl[test]`  
 
 ### From source
