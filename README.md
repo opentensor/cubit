@@ -50,12 +50,8 @@ git clone https://github.com/opentensor/cubit.git
 Enter dir  
 ```
 cd cubit/
-```  
-Install dev requirements  
-```
-pip install -r requirements.dev.txt
-```  
-Install as editable  
+```   
+Install as editable    
 ```
 pip install -e .
 ```  
