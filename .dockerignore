@@ -1,9 +1,0 @@
-.git
-build
-__pycache__
-*.egg-info
-.dockerignore
-.gitignore
-*.so
-*.cpp
-Dockerfile
