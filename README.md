@@ -12,11 +12,11 @@ Using the wheel for your version of python (3.6, 3.7, etc.) from [releases](http
 
 For Python 3.6  
 ```
-pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp36-cp36-linux_x86_64.whl
+pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp36-cp36m-linux_x86_64.whl
 ```   
 For Python 3.7  
 ```
-pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp37-cp37-linux_x86_64.whl
+pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp37-cp37m-linux_x86_64.whl
 ```   
 For Python 3.8  
 ```
@@ -31,11 +31,11 @@ pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1
 Install `test` extras from wheel
 For Python 3.6  
 ```
-pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp36-cp36-linux_x86_64.whl[test]
+pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp36-cp36m-linux_x86_64.whl[test]
 ```   
 For Python 3.7  
 ```
-pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp37-cp37-linux_x86_64.whl[test]
+pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp37-cp37m-linux_x86_64.whl[test]
 ```   
 For Python 3.8  
 ```
