@@ -8,34 +8,49 @@ A python package to register on the bittensor network using a CUDA device.
 - sm_86 enabled CUDA GPU (30XX series, Axxxx series or higher)
 
 ## Install
-Using the wheel for your version of python (3.9, 3.10) from [releases](https://github.com/opentensor/cubit/releases/latest)  
+Using the wheel for your version of python (3.6, 3.7, etc.) from [releases](https://github.com/opentensor/cubit/releases/latest)  
+
+For Python 3.6  
+```
+pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp36-cp36-linux_x86_64.whl
+```   
+For Python 3.7  
+```
+pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp37-cp37-linux_x86_64.whl
+```   
+For Python 3.8  
+```
+pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp38-cp38-linux_x86_64.whl
+```   
 For Python 3.9  
 ```
 pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp39-cp39-linux_x86_64.whl
 ```   
-For Python 3.10  
-```
-pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp310-cp310-linux_x86_64.whl
-```    
 
 #### Install testing dependencies
 Install `test` extras from wheel
-Python 3.9
+For Python 3.6  
+```
+pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp36-cp36-linux_x86_64.whl[test]
+```   
+For Python 3.7  
+```
+pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp37-cp37-linux_x86_64.whl[test]
+```   
+For Python 3.8  
+```
+pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp38-cp38-linux_x86_64.whl[test]
+```   
+For Python 3.9  
 ```
 pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp39-cp39-linux_x86_64.whl[test]
-``` 
-
-Python 3.10
-```
-pip install https://github.com/opentensor/cubit/releases/download/v1.0.5/cubit-1.0.5-cp310-cp310-linux_x86_64.whl[test]
-``` 
-
+```   
 ### From source
 #### Requirements   
 - [cuda-toolkit 11.3 or higher](https://developer.nvidia.com/cuda-downloads)
     - nvcc
 - gcc (9.3.1 or higher)
-- python 3.9 or higher  
+- python 3.6 or higher  
     
 You can check if you have cuda-toolkit with 
 ```

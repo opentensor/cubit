@@ -20,7 +20,7 @@ keywords = ["bittensor", "cuda", "register", "cubit"]
 dependencies = [
     "setuptools>=59.0.0", "wheel", "Cython>=0.29.14", "numpy>=1.19.0" 
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.6"
 
 [project.optional-dependencies]
 test = ["black", "pip-tools", "bittensor>=3.0.0", "pycryptodome==3.4.3" ]
