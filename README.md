@@ -4,7 +4,7 @@ A python package to register on the bittensor network using a CUDA device.
 
 ## Requirements
 - Ubuntu 20.04 or higher  
-- bittensor@feature/cuda_solver  
+- bittensor>=3.0.0  
 - sm_86 enabled CUDA GPU (30XX series, Axxxx series or higher)
 
 ## Install
