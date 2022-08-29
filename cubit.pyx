@@ -43,6 +43,10 @@ cdef extern from "kernels/main.hh":
     void runTest(unsigned char* data, unsigned long size, unsigned char* digest);
     void runTestKeccak(unsigned char* data, unsigned long size, unsigned char* digest);
     uint64 solve_cuda_c(int blockSize, unsigned char* seal, uint64 nonce_start, uint64 update_interval, uint256 limit, unsigned char* block_bytes, int dev_id);
+    void expose_cuda_errors();
+
+cpdef void log_cuda_errors():
+    expose_cuda_errors()
 
 cpdef bytes run_test(unsigned char* data, unsigned long length): 
     cdef unsigned char* digest_ = <unsigned char*> PyMem_Malloc(

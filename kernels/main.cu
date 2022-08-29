@@ -436,3 +436,11 @@ uint64 solve_cuda_c(int blockSize, BYTE* seal, uint64 nonce_start, uint64 update
 void reset_cuda_c() {
     checkCudaErrors(cudaDeviceReset());
 }
+
+void expose_cuda_errors() {
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        printf("CUDA error: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+}
