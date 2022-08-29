@@ -138,7 +138,7 @@ ext = Extension('cubit',
             extra_compile_args={
                 'gcc': [],
                 'nvcc': ['-Xptxas', '-v', '-O3',
-                '-arch=sm_86', '--ptxas-options=-v', '-c',
+                '-arch=sm_86', '-arch=sm_80', '-arch=sm_75', '--ptxas-options=-v', '-c',
                 '--compiler-options', "'-fPIC'"
                 ]
             },
