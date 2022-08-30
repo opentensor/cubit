@@ -85,7 +85,7 @@ __device__ bool seal_meets_difficulty(BYTE* seal, uint256 limit) {
 
 __device__ void create_nonce_bytes(uint64 nonce, BYTE* nonce_bytes) {
     // Convert nonce to bytes (little endian) and store at start of pre_seal;
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 8; i++) {
         nonce_bytes[i] = (nonce >> (i * 8)) & 0xFF;
     }
 }
@@ -204,6 +204,12 @@ __global__ void test_keccak256(BYTE* data, int size, BYTE* digest) {
 
 __global__ void test_seal_hash(BYTE* seal, BYTE* block_hash, uint64 nonce) {
     create_seal_hash(seal, block_hash, nonce);
+    // print out seal
+    printf("seal: ");
+    for (int i = 0; i < 64; i++) {
+        printf("%02x", seal[i]);
+    }
+    printf("\n");
 }
 
 __global__ void test_preseal_hash(BYTE* seal, BYTE* preseal_bytes) {
@@ -242,7 +248,9 @@ bool runTestSealMeetsDifficulty(BYTE* seal, uint256 limit) {
     return result;
 }
 
-void runTestCreateNonceBytes(uint64 nonce, BYTE* nonce_bytes) {
+void runTestCreateNonceBytes(uint64 nonce, BYTE* nonce_bytes, int dev_id) {
+    checkCudaErrors(cudaSetDevice(dev_id));
+
     BYTE* dev_nonce_bytes = NULL;
     checkCudaErrors(cudaMallocManaged(&dev_nonce_bytes, sizeof(BYTE) * 8));
 
@@ -254,7 +262,9 @@ void runTestCreateNonceBytes(uint64 nonce, BYTE* nonce_bytes) {
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-void runTestCreatePreSeal(unsigned char* pre_seal, uint64 nonce, unsigned char* block_bytes) {
+void runTestCreatePreSeal(unsigned char* pre_seal, uint64 nonce, unsigned char* block_bytes, int dev_id) {
+    checkCudaErrors(cudaSetDevice(dev_id));
+
     // Test sha256
     BYTE* dev_pre_seal = NULL;
     checkCudaErrors(cudaMallocManaged(&dev_pre_seal, sizeof(BYTE) * 40));
@@ -306,9 +316,11 @@ void runTestKeccak(BYTE* data, unsigned long size, BYTE* digest) {
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-void runTestSealHash(BYTE* seal, BYTE* block_hash, uint64 nonce) {
+void runTestSealHash(BYTE* seal, BYTE* block_hash, uint64 nonce, int dev_id) {
     BYTE* dev_seal = NULL;
     BYTE* dev_block_hash = NULL;
+    checkCudaErrors(cudaSetDevice(dev_id));
+
     checkCudaErrors(cudaMallocManaged(&dev_seal, 64));
     checkCudaErrors(cudaMallocManaged(&dev_block_hash, 64));
     // Copy data to device

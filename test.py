@@ -120,8 +120,8 @@ class TestCli( unittest.TestCase ):
     # Test create nonce bytes from nonce
     def test_create_nonce_bytes( self ) -> bytes:
         print(self._testMethodName)
-        nonce = 100000000
-        nonce_bytes: bytes = run_test_create_nonce_bytes(nonce)
+        nonce = random.randint(int(math.pow(2, 45)), int(math.pow(2, 63)-1))
+        nonce_bytes: bytes = run_test_create_nonce_bytes(nonce, self.dev_id)
         nonce_bytes_2 = self.get_nonce_bytes(nonce)
         # Unhexlify to compare
         nonce_bytes_2 = binascii.unhexlify(nonce_bytes_2)
@@ -131,8 +131,8 @@ class TestCli( unittest.TestCase ):
     # Test create pre seal
     def test_create_pre_seal( self ) -> bytes:
         print(self._testMethodName)
-        nonce = 1304006780
-        pre_seal = run_test_create_pre_seal(nonce, self.block_bytes)
+        nonce = random.randint(int(math.pow(2, 45)), int(math.pow(2, 63)-1))
+        pre_seal = run_test_create_pre_seal(nonce, self.block_bytes, self.dev_id)
 
         nonce_bytes = self.get_nonce_bytes(nonce)
         pre_seal_2 = bytearray(self.hex_bytes_to_u8_list(nonce_bytes + self.block_bytes))
@@ -142,8 +142,8 @@ class TestCli( unittest.TestCase ):
     # Test block and nonce hash
     def test_seal_hash( self ) -> None:
         print(self._testMethodName)
-        nonce = 0
-        seal = run_test_seal_hash(self.block_bytes, nonce)
+        nonce = random.randint(int(math.pow(2, 45)), int(math.pow(2, 63)-1))
+        seal = run_test_seal_hash(self.block_bytes, nonce, self.dev_id)
         nonce_bytes = self.get_nonce_bytes(nonce)
         pre_seal = nonce_bytes + self.block_bytes
 

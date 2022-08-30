@@ -36,9 +36,9 @@ cdef extern from "kernels/main.hh":
     void reset_cuda_c();
     int runTestSealMeetsDifficulty(unsigned char* seal, unsigned long* limit);
     int runTestLessThan(uint256 a, uint256 b);
-    void runTestCreatePreSeal(unsigned char* pre_seal, uint64 nonce, unsigned char* block_bytes);
-    void runTestCreateNonceBytes(unsigned long long nonce, unsigned char* nonce_bytes);
-    void runTestSealHash(unsigned char* seal, unsigned char* block_hash, uint64 nonce);
+    void runTestCreatePreSeal(unsigned char* pre_seal, uint64 nonce, unsigned char* block_bytes, int dev_id);
+    void runTestCreateNonceBytes(unsigned long long nonce, unsigned char* nonce_bytes, int dev_id);
+    void runTestSealHash(unsigned char* seal, unsigned char* block_hash, uint64 nonce, int dev_id);
     void runTestPreSealHash(unsigned char* seal, unsigned char* preseal_bytes);
     void runTest(unsigned char* data, unsigned long size, unsigned char* digest);
     void runTestKeccak(unsigned char* data, unsigned long size, unsigned char* digest);
@@ -74,12 +74,12 @@ cpdef bytes run_test_keccak(unsigned char* data, unsigned int length):
     finally:
         PyMem_Free(digest_)
 
-cpdef bytes run_test_seal_hash(unsigned char* block_bytes, uint64 nonce):
+cpdef bytes run_test_seal_hash(unsigned char* block_bytes, uint64 nonce, int dev_id):
     cdef unsigned char* digest_ = <unsigned char*> PyMem_Malloc(
         64 * sizeof(unsigned char))
 
     try:
-        runTestSealHash(digest_, block_bytes, nonce)
+        runTestSealHash(digest_, block_bytes, nonce, dev_id)
 
         return digest_[:32]
     finally:
@@ -96,13 +96,13 @@ cpdef bytes run_test_preseal_hash(unsigned char* preseal_bytes):
     finally:
         PyMem_Free(digest_)
 
-cpdef bytes run_test_create_nonce_bytes(uint64 nonce):
+cpdef bytes run_test_create_nonce_bytes(uint64 nonce, int dev_id):
     cdef unsigned char* nonce_bytes = <unsigned char*> PyMem_Malloc(
         8 * sizeof(unsigned char))
     cdef int i
 
     try:
-        runTestCreateNonceBytes(nonce, nonce_bytes)
+        runTestCreateNonceBytes(nonce, nonce_bytes, dev_id)
         
         # Convert digest to python string
         nonce_bytes_str = nonce_bytes
@@ -153,13 +153,13 @@ cpdef int run_test_seal_meets_difficulty(const unsigned char[:] seal, const unsi
         PyMem_Free(seal_)
         PyMem_Free(limit_char)
 
-cpdef bytearray run_test_create_pre_seal(uint64 nonce, unsigned char* block_bytes):
+cpdef bytearray run_test_create_pre_seal(uint64 nonce, unsigned char* block_bytes, int dev_id):
     cdef unsigned char* preseal_bytes = <unsigned char*> PyMem_Malloc(
         40 * sizeof(unsigned char))
     cdef int i
 
     try:
-        runTestCreatePreSeal(preseal_bytes, nonce, block_bytes)
+        runTestCreatePreSeal(preseal_bytes, nonce, block_bytes, dev_id)
 
         return bytearray(preseal_bytes[:40])
     finally:

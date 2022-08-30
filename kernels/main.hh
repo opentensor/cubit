@@ -24,10 +24,10 @@
 extern void reset_cuda_c();
 extern int runTestLessThan(unsigned long* a, unsigned long* b);
 extern bool runTestSealMeetsDifficulty(unsigned char* seal, unsigned long* limit);
-extern void runTestCreatePreSeal(unsigned char* pre_seal, uint64 nonce, unsigned char* block_bytes);
-extern void runTestCreateNonceBytes(unsigned long long nonce, unsigned char* nonce_bytes);
+extern void runTestCreatePreSeal(unsigned char* pre_seal, uint64 nonce, unsigned char* block_bytes, int dev_id);
+extern void runTestCreateNonceBytes(unsigned long long nonce, unsigned char* nonce_bytes, int dev_id);
 extern void runTestPreSealHash(unsigned char* seal, unsigned char* preseal_bytes);
-extern void runTestSealHash(unsigned char* seal, unsigned char* block_hash, uint64 nonce);
+extern void runTestSealHash(unsigned char* seal, unsigned char* block_hash, uint64 nonce, int dev_id);
 extern void runTest(unsigned char* data, unsigned long size, unsigned char* digest);
 extern void runTestKeccak(unsigned char* data, unsigned long size, unsigned char* digest);
 extern uint64 solve_cuda_c(int blockSize, unsigned char* seal, uint64 nonce_start, uint64 update_interval, unsigned long* limit, unsigned char* block_bytes, int dev_id);
