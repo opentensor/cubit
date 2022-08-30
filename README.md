@@ -12,38 +12,38 @@ Using the wheel for your version of python (3.6, 3.7, etc.) from [releases](http
 
 For Python 3.6  
 ```
-pip install https://github.com/opentensor/cubit/releases/download/v1.1.0/cubit-1.1.0-cp36-cp36m-linux_x86_64.whl
+pip install https://github.com/opentensor/cubit/releases/download/v1.1.1/cubit-1.1.1-cp36-cp36m-linux_x86_64.whl
 ```   
 For Python 3.7  
 ```
-pip install https://github.com/opentensor/cubit/releases/download/v1.1.0/cubit-1.1.0-cp37-cp37m-linux_x86_64.whl
+pip install https://github.com/opentensor/cubit/releases/download/v1.1.1/cubit-1.1.1-cp37-cp37m-linux_x86_64.whl
 ```   
 For Python 3.8  
 ```
-pip install https://github.com/opentensor/cubit/releases/download/v1.1.0/cubit-1.1.0-cp38-cp38-linux_x86_64.whl
+pip install https://github.com/opentensor/cubit/releases/download/v1.1.1/cubit-1.1.1-cp38-cp38-linux_x86_64.whl
 ```   
 For Python 3.9  
 ```
-pip install https://github.com/opentensor/cubit/releases/download/v1.1.0/cubit-1.1.0-cp39-cp39-linux_x86_64.whl
+pip install https://github.com/opentensor/cubit/releases/download/v1.1.1/cubit-1.1.1-cp39-cp39-linux_x86_64.whl
 ```   
 
 #### Install testing dependencies
 Install `test` extras from wheel
 For Python 3.6  
 ```
-pip install https://github.com/opentensor/cubit/releases/download/v1.1.0/cubit-1.1.0-cp36-cp36m-linux_x86_64.whl[test]
+pip install https://github.com/opentensor/cubit/releases/download/v1.1.1/cubit-1.1.1-cp36-cp36m-linux_x86_64.whl[test]
 ```   
 For Python 3.7  
 ```
-pip install https://github.com/opentensor/cubit/releases/download/v1.1.0/cubit-1.1.0-cp37-cp37m-linux_x86_64.whl[test]
+pip install https://github.com/opentensor/cubit/releases/download/v1.1.1/cubit-1.1.1-cp37-cp37m-linux_x86_64.whl[test]
 ```   
 For Python 3.8  
 ```
-pip install https://github.com/opentensor/cubit/releases/download/v1.1.0/cubit-1.1.0-cp38-cp38-linux_x86_64.whl[test]
+pip install https://github.com/opentensor/cubit/releases/download/v1.1.1/cubit-1.1.1-cp38-cp38-linux_x86_64.whl[test]
 ```   
 For Python 3.9  
 ```
-pip install https://github.com/opentensor/cubit/releases/download/v1.1.0/cubit-1.1.0-cp39-cp39-linux_x86_64.whl[test]
+pip install https://github.com/opentensor/cubit/releases/download/v1.1.1/cubit-1.1.1-cp39-cp39-linux_x86_64.whl[test]
 ```   
 ### From source
 #### Requirements   
