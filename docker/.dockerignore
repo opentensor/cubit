@@ -1,0 +1,10 @@
+.git
+build
+dist
+__pycache__
+*.egg-info
+.dockerignore
+.gitignore
+*.so
+*.cpp
+docker
