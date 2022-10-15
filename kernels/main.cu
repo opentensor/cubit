@@ -166,16 +166,8 @@ __global__ void solve(uint64* solution, uint64 nonce_start, uint64 update_interv
         
             if (seal_meets_difficulty(seal, limit)) {
                 *solution = j + 1;
-                printf("Solution found! %llu\n", *solution);
+                //printf("Solution found! %llu\n", *solution);
                 found = true;
-
-                // TODO: Find why these lines make it work
-                // IT'S MAGIC                        
-                BYTE fake_pre_seal[104];  
-                BYTE* fake_block_bytes = fake_pre_seal + 40;
-                create_pre_seal(fake_pre_seal, fake_block_bytes, 10);
-                while (false);
-
                 return;
             }
         }
