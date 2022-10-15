@@ -8,12 +8,8 @@ A python package to register on the bittensor network using a CUDA device.
 - sm_86 enabled CUDA GPU (30XX series, Axxxx series or higher)
 
 ## Install
-Using the wheel for your version of python (3.6, 3.7, etc.) from [releases](https://github.com/opentensor/cubit/releases/latest)  
+Using the wheel for your version of python (3.7, 3.8, etc.) from [releases](https://github.com/opentensor/cubit/releases/latest)  
 
-For Python 3.6  
-```
-pip install https://github.com/opentensor/cubit/releases/download/v1.1.1/cubit-1.1.1-cp36-cp36m-linux_x86_64.whl
-```   
 For Python 3.7  
 ```
 pip install https://github.com/opentensor/cubit/releases/download/v1.1.1/cubit-1.1.1-cp37-cp37m-linux_x86_64.whl
@@ -29,10 +25,6 @@ pip install https://github.com/opentensor/cubit/releases/download/v1.1.1/cubit-1
 
 #### Install testing dependencies
 Install `test` extras from wheel
-For Python 3.6  
-```
-pip install https://github.com/opentensor/cubit/releases/download/v1.1.1/cubit-1.1.1-cp36-cp36m-linux_x86_64.whl[test]
-```   
 For Python 3.7  
 ```
 pip install https://github.com/opentensor/cubit/releases/download/v1.1.1/cubit-1.1.1-cp37-cp37m-linux_x86_64.whl[test]
@@ -50,7 +42,7 @@ pip install https://github.com/opentensor/cubit/releases/download/v1.1.1/cubit-1
 - [cuda-toolkit 11.3 or higher](https://developer.nvidia.com/cuda-downloads)
     - nvcc
 - gcc (9.3.1 or higher)
-- python 3.6 or higher  
+- python 3.7 or higher  
     
 You can check if you have cuda-toolkit with 
 ```
