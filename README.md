@@ -22,7 +22,10 @@ For Python 3.9
 ```
 pip install https://github.com/opentensor/cubit/releases/download/v1.1.2/cubit-1.1.2-cp39-cp39-linux_x86_64.whl
 ```   
-
+For Python 3.9  
+```
+pip install https://github.com/opentensor/cubit/releases/download/v1.1.2/cubit-1.1.2-cp310-cp310-linux_x86_64.whl
+```   
 #### Install testing dependencies
 Install `test` extras from wheel
 For Python 3.7  
@@ -36,6 +39,10 @@ pip install https://github.com/opentensor/cubit/releases/download/v1.1.2/cubit-1
 For Python 3.9  
 ```
 pip install https://github.com/opentensor/cubit/releases/download/v1.1.2/cubit-1.1.2-cp39-cp39-linux_x86_64.whl[test]
+```   
+For Python 3.10  
+```
+pip install https://github.com/opentensor/cubit/releases/download/v1.1.2/cubit-1.1.2-cp310-cp310-linux_x86_64.whl[test]
 ```   
 ### From source
 #### Requirements   
