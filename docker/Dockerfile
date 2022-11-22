@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM opentensorfdn/bittensor:3.4.1-torch1.12.0-cuda11.3-pm2
+FROM opentensorfdn/bittensor:3.4.3-torch1.12.0-cuda11.3-pm2
 
 # Install cubit
 COPY . /cubit/

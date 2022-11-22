@@ -7,6 +7,14 @@ A python package to register on the bittensor network using a CUDA device.
 - bittensor>=3.0.0  
 - sm_86 enabled CUDA GPU (30XX series, Axxxx series or higher)
 
+## Building docker image
+
+1. Change the base image to the target bittensor version
+1. Build the image:
+    1. `sudo docker build -t opentensorfdn/bittensor:VERSION_BT-torch1.12.0-cuda11.3-cubitVERSION_CUBIT-pm2 -f ./docker/Dockerfile .`
+1. Push the image
+    1. `sudo docker push -t opentensorfdn/bittensor:VERSION_BT-torch1.12.0-cuda11.3-cubitVERSION_CUBIT-pm2 -f ./docker/Dockerfile .`
+
 ## Install
 Using the wheel for your version of python (3.7, 3.8, etc.) from [releases](https://github.com/opentensor/cubit/releases/latest)  
 
