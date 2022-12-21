@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM opentensorfdn/bittensor:3.6.0
+FROM opentensorfdn/bittensor:3.6.1
 
 # Install cubit
 COPY . /cubit/
