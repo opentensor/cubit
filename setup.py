@@ -138,7 +138,7 @@ ext = Extension('cubit',
             extra_compile_args={
                 'gcc': [],
                 'nvcc': ['-Xptxas', '-v', '-O3',
-                '-gencode', 'arch=compute_86,code=sm_86', '-gencode', 'arch=compute_80,code=sm_80', '-gencode', 'arch=compute_75,code=sm_75', '-gencode', 'arch=compute_70,code=sm_70', '--ptxas-options=-v', '-c',
+                '-gencode', 'arch=compute_86,code=sm_86', '-gencode', 'arch=compute_80,code=sm_80', '-gencode', 'arch=compute_75,code=sm_75', '-gencode', 'arch=compute_70,code=sm_70', '-gencode', 'arch=compute_61,code=sm_61', '--ptxas-options=-v', '-c',
                 '--compiler-options', "'-fPIC'"
                 ]
             },
