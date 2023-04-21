@@ -55,7 +55,7 @@ class TestCli( unittest.TestCase ):
             self.fail("No GPU available")
 
         self.dev_id = 5 # By default, use the first GPU
-        self.st = bt.subtensor(network="nakamoto")
+        self.st = bt.subtensor(network="finney")
         self.bn = self.st.get_current_block()
         self.bh = self.st.substrate.get_block_hash(self.bn)
         self.difficulty = 1_000_000_000 #st.difficulty
@@ -138,6 +138,37 @@ class TestCli( unittest.TestCase ):
         pre_seal_2 = bytearray(self.hex_bytes_to_u8_list(nonce_bytes + self.block_bytes))
 
         self.assertEqual(pre_seal, pre_seal_2)
+
+    # Test create pre seal
+    def test_create_new_pre_seal( self ) -> bytes:
+        print(self._testMethodName)
+        nonce = random.randint(int(math.pow(2, 45)), int(math.pow(2, 63)-1))
+        kec = keccak.new(digest_bits=512)
+        block_and_hotkey_hash_bytes = kec.update( self.block_bytes ).digest()
+        block_and_hotkey_hash_hex = binascii.hexlify(block_and_hotkey_hash_bytes)[:64]
+
+        pre_seal = run_test_create_pre_seal(nonce, block_and_hotkey_hash_hex, self.dev_id)
+
+        nonce_bytes = self.get_nonce_bytes(nonce)
+        pre_seal_2 = bytearray(self.hex_bytes_to_u8_list(nonce_bytes + block_and_hotkey_hash_hex))
+
+        self.assertEqual(pre_seal, pre_seal_2)
+
+    def test_new_seal_hash( self ) -> None:
+        nonce = random.randint(int(math.pow(2, 45)), int(math.pow(2, 63)-1))
+        kec = keccak.new(digest_bits=512)
+        block_and_hotkey_hash_bytes = kec.update( self.block_bytes ).digest()
+        block_and_hotkey_hash_hex = binascii.hexlify(block_and_hotkey_hash_bytes)[:64]
+
+        seal = run_test_seal_hash(block_and_hotkey_hash_hex, nonce, self.dev_id)
+
+        nonce_bytes = binascii.hexlify(nonce.to_bytes(8, 'little'))
+        pre_seal = nonce_bytes + block_and_hotkey_hash_hex
+        seal_sh256 = hashlib.sha256( bytearray(self.hex_bytes_to_u8_list(pre_seal)) ).digest()
+        kec = keccak.new(digest_bits=256)
+        seal_2 = kec.update( seal_sh256 ).digest()
+
+        self.assertEqual(seal, seal_2)
     
     # Test block and nonce hash
     def test_seal_hash( self ) -> None:
