@@ -41,11 +41,13 @@ __device__ bool lt(uint256 a, uint256 b) {
     // https://stackoverflow.com/questions/15356622/anyone-know-whether-nvidias-gpus-are-big-or-little-endian
     BYTE* a_ = (BYTE*)a;
     BYTE* b_ = (BYTE*)b;
-    __uint128_t* a_128_high = (__uint128_t*)(a_ + 16);
-    __uint128_t* b_128_high = (__uint128_t*)(b_ + 16);
+    // Note: Requires CUDA TK 11.5 or higher for unsigned __int128
+    // https://developer.nvidia.com/blog/implementing-high-precision-decimal-arithmetic-with-cuda-int128/
+    unsigned __int128* a_128_high = (unsigned __int128*)(a_ + 16);
+    unsigned __int128* b_128_high = (unsigned __int128*)(b_ + 16);
 
-    __uint128_t* a_128_low = (__uint128_t*)a_;
-    __uint128_t* b_128_low = (__uint128_t*)b_;
+    unsigned __int128* a_128_low = (unsigned __int128*)a_;
+    unsigned __int128* b_128_low = (unsigned __int128*)b_;
     
     bool result = *a_128_high < *b_128_high;
     result = result || (*a_128_high == *b_128_high && *a_128_low < *b_128_low);

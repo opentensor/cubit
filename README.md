@@ -45,7 +45,7 @@ pip install https://github.com/opentensor/cubit/releases/download/v1.2.2/cubit-1
 ```   
 ### From source
 #### Requirements   
-- [cuda-toolkit 11.3 or higher](https://developer.nvidia.com/cuda-downloads)
+- [cuda-toolkit 11.5 or higher](https://developer.nvidia.com/cuda-downloads)
     - nvcc
 - gcc (9.3.1 or higher)
 - python 3.8 or higher  
