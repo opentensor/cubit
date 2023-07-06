@@ -147,7 +147,7 @@ ext = Extension('cubit',
                 
                 '--ptxas-options=-v', '-c',
                 '--compiler-options', "'-fPIC'",
-                "--device-int128", # enable 128-bit integers
+                #"--device-int128", # enable 128-bit integers
                 ]
             },
             include_dirs = [numpy_include, CUDA['include']])
