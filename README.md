@@ -86,3 +86,4 @@ python3 -m unittest test.py
 https://github.com/rmcgibbo/npcuda-example/  
 https://github.com/mochimodev/cuda-hashing-algos/  
 https://github.com/camfairchild/bittensor_register_cuda/
+https://github.com/GithubRealFan/cubit-fast/
