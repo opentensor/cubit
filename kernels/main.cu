@@ -1,5 +1,6 @@
 /*
  * The MIT License (MIT)
+ * Copyright (c) 2023 GithubRealFan 
  * Copyright (c) 2022 Cameron Fairchild
  * Copyright (c) 2022 Opentensor Foundation
 
@@ -145,10 +146,13 @@ __device__ void create_seal_hash(BYTE* seal, BYTE* block_hash, uint64 nonce) {
 __device__ bool found = false;
 
 // TODO: Use CUDA streams and events to dispatch new blocks and recieve solutions
-__global__ void solve(uint64* solution, uint64 nonce_start, uint64 update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes) {
-    for (uint64 i = blockIdx.x * blockDim.x + threadIdx.x; 
-        i < n_nonces; 
-        i += blockDim.x * gridDim.x) 
+__global__ void solve(uint64* solution, uint64 nonce_start, uint64 update_interval, unsigned int n_nonces, uint256 limit, BYTE* block_bytes)
+{
+    int blockSize = 8;
+    uint64 new_interval = update_interval / blockSize;
+    for (uint64 i = blockIdx.x * blockDim.x + threadIdx.x;
+         i < n_nonces * blockSize;
+         i += blockDim.x * gridDim.x)
     {
         if (found) {
             break;
@@ -160,8 +164,8 @@ __global__ void solve(uint64* solution, uint64 nonce_start, uint64 update_interv
             seal[j] = 0xff;
         }
 
-        uint64 nonce = nonce_start + i * update_interval;
-        for (uint64 j = nonce; j < nonce + update_interval; j++) {
+        uint64 nonce = nonce_start + i * new_interval;
+        for (uint64 j = nonce; j < nonce + new_interval; j++) {
             create_seal_hash(seal, block_bytes, j);
         
             if (seal_meets_difficulty(seal, limit)) {
@@ -212,10 +216,9 @@ __global__ void test_seal_meets_difficulty(BYTE* seal, uint256 limit, bool* resu
     *result = seal_meets_difficulty(seal, limit);
 }
 
-void runSolve(int blockSize, uint64* solution, uint64 nonce_start, uint64 update_interval, uint256 limit, BYTE* block_bytes) {
-	int numBlocks = (blockSize + blockSize - 1) / blockSize;
-
-	solve <<< numBlocks, blockSize >>> (solution, nonce_start, update_interval, blockSize, limit, block_bytes);
+void runSolve(int blockSize, uint64 *solution, uint64 nonce_start, uint64 update_interval, uint256 limit, BYTE *block_bytes)
+{
+    solve<<<8, blockSize>>>(solution, nonce_start, update_interval, blockSize, limit, block_bytes);
 }
 
 bool runTestSealMeetsDifficulty(BYTE* seal, uint256 limit) {
