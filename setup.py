@@ -159,7 +159,7 @@ setup(
     author = 'Opentensor Foundation',
     author_email = 'cameron@opentensor.ai',
     url = 'https://github.com/opentensor/cubit',
-    version = '1.2.1',
+    version = '1.2.2',
 
     ext_modules = cythonize(ext),
 
